@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
-import authRoutes from "./routes/auth.routes.js";
-import workspaceRoutes from "./routes/workspace.routes.js"
+import authRoutes from "./routes/auth.routes";
+import workspaceRoutes from "./routes/workspace.routes";
 import cookieParser from "cookie-parser";
-import addWorkspaceMemberRoutes from "./routes/workspaceMember.routes.js"
+import addWorkspaceMemberRoutes from "./routes/workspaceMember.routes";
+
 const app = express();
 
 app.use(cors());

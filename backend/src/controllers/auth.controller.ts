@@ -1,12 +1,31 @@
-import { pool } from "../config/DB_connect.js";
-import { hashPassword, matchPassword } from "../utils/hash.js";
-import { generateToken } from "../utils/jwt.js";
+import { pool } from "../config/DB_connect";
+import { Request,Response } from "express";
+import { hashPassword, matchPassword } from "../utils/hash";
+import { generateToken } from "../utils/jwt";
 
-export const signup = async (req, res) =>{
+interface signupBody{
+    name:string,
+    email:string,
+    password:string
+}
+interface loginBody{
+    email:string,
+    password:string
+}
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  password_hash: string;
+  is_verified:boolean,
+  created_at: Date;
+}
+export const signup = async (req:Request<{},{},signupBody>, res:Response) : Promise<Response| void> =>{
     try {
+
         const { name, email, password } = req.body;
 
-        const existingUser = await pool.query(
+        const existingUser = await pool.query<User>(
             "SELECT * FROM users WHERE email = $1",
             [email]
         );
@@ -17,7 +36,7 @@ export const signup = async (req, res) =>{
 
         const hashed = await hashPassword(password);
 
-        const result = await pool.query(
+        const result = await pool.query<User>(
             "INSERT INTO users (name,email,password_hash) VALUES ($1,$2,$3) RETURNING *",
             [name, email, hashed]
         );
@@ -27,15 +46,16 @@ export const signup = async (req, res) =>{
             user: result.rows[0]
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        const err=error as Error;
+        res.status(500).json({ message: err.message });
     }
 }
 
-export const login = async (req, res) => {
+export const login = async (req:Request<{},{},loginBody>, res:Response) : Promise<Response | void> => {
     try {
         const { email, password } = req.body;
 
-        const result = await pool.query(
+        const result = await pool.query<User>(
             "SELECT * FROM users WHERE email = $1",
             [email]
         );
@@ -64,6 +84,7 @@ export const login = async (req, res) => {
             message: "Login successful",
         });
     } catch (error) {
-       res.status(500).json({ message: error.message });
+        const err = error as Error;
+        res.status(500).json({ message: err.message });
     }
 }

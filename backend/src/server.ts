@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import app from "./app.js";
-import { pool } from "./config/DB_connect.js";
+import app from "./app";
+import { pool } from "./config/DB_connect";
 
-const PORT = process.env.PORT || 5000;
+const PORT =Number (process.env.PORT)|| 5000;
 
-const connectWithRetry = async (retries = 5, delay = 3000) => {
+const connectWithRetry = async (retries = 5, delay = 3000):Promise<void> => {
   for (let i = 0; i < retries; i++) {
     try {
       await pool.connect();

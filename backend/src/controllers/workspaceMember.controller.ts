@@ -1,14 +1,40 @@
-import { pool } from "../config/DB_connect.js";
-
-export const addWorkspaceMember = async (req, res) => {
+import { pool } from "../config/DB_connect";
+import { Request,Response } from "express";
+interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string;
+  created_at: Date;
+}
+interface WorkspaceMember{
+    workspace_id:string,
+    user_id:string,
+    role:"owner" | "admin" | "member",
+    joined_at:Date
+}
+interface MemberBody{
+  workspace_id:string,
+  user_id:string,
+  role:"owner" | "admin" | "member"
+}
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  password_hash: string;
+  is_verified:boolean,
+  created_at: Date;
+}
+export const addWorkspaceMember = async (req:Request<{workspaceId:string},{},MemberBody>,res:Response):Promise<Response | void > => {
   try {
     const workspace_id = req.params.workspaceId;
-    const { userId, role } = req.body;
-    const requesterId = req.user.id;
+    const { user_id, role } = req.body;
+    const requesterId = req.user?.id;
 
-    if (!userId || !role) {
+    if (!user_id || !role) {
       return res.status(400).json({
-        message: "userId and role are required",
+        message: "user_id and role are required",
       });
     }
 
@@ -18,7 +44,7 @@ export const addWorkspaceMember = async (req, res) => {
       });
     }
 
-    const workspaceResult = await pool.query(
+    const workspaceResult = await pool.query<Workspace>(
       "SELECT id, owner_id FROM workspaces WHERE id = $1",
       [workspace_id]
     );
@@ -31,7 +57,7 @@ export const addWorkspaceMember = async (req, res) => {
 
     const workspace = workspaceResult.rows[0];
 
-    const requesterRoleResult = await pool.query(
+    const requesterRoleResult = await pool.query<WorkspaceMember>(
       "SELECT role FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
       [workspace_id, requesterId]
     );
@@ -56,9 +82,9 @@ export const addWorkspaceMember = async (req, res) => {
       });
     }
 
-    const userResult = await pool.query(
+    const userResult = await pool.query<User>(
       "SELECT id FROM users WHERE id = $1",
-      [userId]
+      [user_id]
     );
 
     if (userResult.rowCount === 0) {
@@ -69,20 +95,20 @@ export const addWorkspaceMember = async (req, res) => {
 
     const existingMember = await pool.query(
       "SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
-      [workspace_id, userId]
+      [workspace_id, user_id]
     );
 
-    if (existingMember.rowCount > 0) {
+    if (existingMember.rows.length > 0) {
       return res.status(409).json({
         message: "User is already a member of this workspace",
       });
     }
 
-    const newMember = await pool.query(
+    const newMember = await pool.query<WorkspaceMember>(
       `INSERT INTO workspace_members (workspace_id, user_id, role)
        VALUES ($1, $2, $3)
        RETURNING *`,
-      [workspace_id, userId, role]
+      [workspace_id, user_id, role]
     );
 
     return res.status(201).json({
@@ -91,9 +117,9 @@ export const addWorkspaceMember = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    const err= error as Error;
     return res.status(500).json({
-      message: "Something went wrong",
+      message: err.message,
     });
   }
 };
