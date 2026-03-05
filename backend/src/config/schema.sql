@@ -52,7 +52,9 @@ CREATE TABLE projects (
   status VARCHAR(50) DEFAULT 'active',
   created_by UUID REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT unique_project_per_workspace
+  UNIQUE (workspace_id, name)
 );
 
 -- Tasks
