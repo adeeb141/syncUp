@@ -71,5 +71,6 @@ CREATE TABLE tasks (
   due_date TIMESTAMP,
   position FLOAT, 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(project_id, title)
 );

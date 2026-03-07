@@ -37,7 +37,7 @@ export const signup = async (req:Request<{},{},signupBody>, res:Response) : Prom
         const hashed = await hashPassword(password);
 
         const result = await pool.query<User>(
-            "INSERT INTO users (name,email,password_hash) VALUES ($1,$2,$3) RETURNING *",
+            "INSERT INTO users (name,email,password_hash) VALUES ($1,$2,$3) RETURNING id,name,email,is_verified,created_at",
             [name, email, hashed]
         );
 

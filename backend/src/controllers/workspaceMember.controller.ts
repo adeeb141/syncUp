@@ -26,6 +26,7 @@ interface User {
   is_verified:boolean,
   created_at: Date;
 }
+
 export const addWorkspaceMember = async (req:Request<{workspaceId:string},{},MemberBody>,res:Response):Promise<Response | void > => {
   try {
     const workspace_id = req.params.workspaceId;
