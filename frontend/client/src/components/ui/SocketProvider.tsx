@@ -4,18 +4,17 @@ import { useEffect } from "react";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { WebsocketServerMessages } from "@/types";
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
-    const user = useAuthStore((store) => store.user);
+    const userId = useAuthStore((store) => store.user?.id);
     const { pushNotification } = useNotificationStore();
     useEffect(() => {
-        if (!user) return;
+        if (!userId) return;
 
         const ws = new WebSocket('ws://localhost:5000');
 
         ws.onopen = () => {
-            console.log("Client Connected");
             ws.send(JSON.stringify({
                 type: "REGISTER",
-                userId: user.id
+                userId
             }));
         };
 
@@ -28,17 +27,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     message: message.payload.message
                 });
             }
-            console.log("Message from server:", message);
         };
 
-        ws.onclose = () => {
-            console.log("WebSocket disconnected");
-        };
+        ws.onclose = () => {};
 
         return () => {
             ws.close();
         };
-    }, [user]);
+    }, [userId]);
 
     return <>{children}</>;
 };

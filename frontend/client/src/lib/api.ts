@@ -1,5 +1,5 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-console.log(BASE_URL);
+
 
 const fetchApi = async<T>(endpoint:string,options?:RequestInit):Promise<T>=>{
    

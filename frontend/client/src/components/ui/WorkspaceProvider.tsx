@@ -2,14 +2,17 @@
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { api } from "@/lib/api";
 import { workspacePageInfo } from "@/types";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 export const WorkspaceProvider=()=>{
    const{setWorkspaces,setLoadingWorkspaces}=useWorkspaceStore();
+   const hasFetched = useRef(false);
    interface workspacesObject{
     workspaces:workspacePageInfo[]
    }
    useEffect(()=>{
-    console.log("Hello");
+      console.log("Hello");
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     const fetchWorkspace=async()=>{
         try{
             const workspacesObject=await api.get("/api/workspaces/getuserworkspaces") as workspacesObject;

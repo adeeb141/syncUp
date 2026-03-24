@@ -10,21 +10,16 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log("AuthGate is running");
-    
-    if (!user) router.push("/login");
-  }, [user]);
+    if (!isLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, isLoading, router]);
 
   if (isLoading) {
-    console.log(isLoading);
-    return (
-      <><LoadingScreen></LoadingScreen></>
-    )
+    return <LoadingScreen />;
   }
   if (!user) {
-    return (
-      <><LoadingScreen></LoadingScreen></>
-    )
-
+    return <LoadingScreen />;
   }
   return <>{children}</>;
 }

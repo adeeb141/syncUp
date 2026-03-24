@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const isLoading = useAuthStore((state) => state.isLoading);
   useEffect(() => {
     if (user) router.push("/workspaces");
-  }, [user]);
+  }, [user, router]);
 
   if (isLoading) return <LoadingScreen />;
   if (user) return <LoadingScreen />; // show loader while redirect happens
