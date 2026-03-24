@@ -1,3 +1,4 @@
+import { log } from "node:console";
 import { pool } from "../config/DB_connect";
 import { Request, Response } from "express";
 
@@ -22,6 +23,8 @@ interface WorkspaceReqBody {
 export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, res: Response): Promise<Response | void> => {
     const client = await pool.connect();
     try {
+        console.log("in create workspace");
+
         await client.query("BEGIN");
 
         const { name, slug } = req.body;
@@ -40,9 +43,10 @@ export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, re
 
         await client.query("COMMIT");
 
-
+        const resWorkspace = { ...workspace.rows[0], role: "owner" }
         res.status(201).json({
             message: "Workspace Created",
+            workspace: resWorkspace
         });
 
     } catch (e) {
@@ -166,33 +170,74 @@ export const updateWorkspace = async (req: Request<{ workspace_id: string }, {},
     }
 }
 
-export const getUserWorkspaces= async(req:Request<{},{},{}>,res:Response):
-Promise<Response | void> =>{
-    try{
-       const user_id=req.user?.id;
-       
-       //check if user is authorized 
+export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response):
+    Promise<Response | void> => {
+    try {
+        console.log("In get");
+
+        const user_id = req.user?.id;
+
+        //check if user is authorized 
         if (!user_id) {
             return res.status(401).json({ message: "Unauthorized" });
         }
-        
+
         //return the workspaces of the user
-        const userWorkspaces= await pool.query(
+        const userWorkspaces = await pool.query(
             `SELECT wm.workspace_id,w.name,w.slug,w.owner_id,w.created_at,wm.role
              FROM workspace_members wm
              JOIN workspaces w
              ON wm.workspace_id=w.id AND wm.user_id=$1`,
-             [user_id]
+            [user_id]
         )
-        if(userWorkspaces.rowCount===0){
-            return res.status(404).json({message:"user is not part of any workspace"});
+        if (userWorkspaces.rowCount === 0) {
+            return res.status(404).json({ message: "user is not part of any workspace" });
         }
 
-        return res.status(200).json({workspaces:userWorkspaces.rows});
+        return res.status(200).json({ workspaces: userWorkspaces.rows });
 
 
-    }catch(e){
-      const err = e as Error;
+    } catch (e) {
+        const err = e as Error;
+        res.status(500).json({ message: err.message });
+    }
+}
+
+export const getWorkspaceProjectsAndMembers = async (req: Request<{ workspace_id: string }, {}, {}>, res: Response):
+    Promise<Response | void> => {
+    try {
+        const workspace_id = req.params.workspace_id;
+
+        //check if workspace exist and return the workspace's info
+        const check=await pool.query(`
+            SELECT FROM workspaces WHERE id=${1}`,
+            [workspace_id])
+        if(check.rowCount===0){
+            return res.status(404).json({ message: "Workspace doesnt exist" });
+        }
+        const [checkAndReturnMembers,checkAndReturnProjects]=await Promise.all([
+            pool.query(
+            `SELECT wm.user_id, wm.role, u.name
+             FROM workspace_members wm
+             LEFT JOIN users u
+             ON wm.user_id = u.id
+             WHERE wm.workspace_id = $1;`,
+            [workspace_id]),
+            pool.query(
+            ` SELECT id, name, created_by
+              FROM projects
+              WHERE workspace_id = $1`,
+             [workspace_id])
+            ])
+        const workspaceMembers=checkAndReturnMembers.rows;
+        const workspaceProjects=checkAndReturnProjects.rows;
+
+        res.status(200).json({
+            workspaceMembers,
+            workspaceProjects
+        })
+    } catch (e) {
+        const err = e as Error;
         res.status(500).json({ message: err.message });
     }
 }

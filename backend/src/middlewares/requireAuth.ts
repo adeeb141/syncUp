@@ -3,7 +3,9 @@ import { Request,Response,NextFunction } from "express";
 
 interface JwtPayload{
   id:string,
-  email:string
+  email:string,
+  is_verified:boolean,
+  created_at:Date
 }
 export const requireAuth=(req :Request,res:Response,next:NextFunction) : Response | void=>{
     try{
@@ -16,7 +18,9 @@ export const requireAuth=(req :Request,res:Response,next:NextFunction) : Respons
 
       req.user={
         id:result.id,
-        email:result.email
+        email:result.email,
+        is_verified:result.is_verified,
+        created_at:result.created_at
       }
       next();
     }catch(error){

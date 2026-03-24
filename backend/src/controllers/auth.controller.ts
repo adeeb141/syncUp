@@ -54,7 +54,7 @@ export const signup = async (req:Request<{},{},signupBody>, res:Response) : Prom
 export const login = async (req:Request<{},{},loginBody>, res:Response) : Promise<Response | void> => {
     try {
         const { email, password } = req.body;
-
+        
         const result = await pool.query<User>(
             "SELECT * FROM users WHERE email = $1",
             [email]
@@ -67,7 +67,7 @@ export const login = async (req:Request<{},{},loginBody>, res:Response) : Promis
         const user = result.rows[0];
 
         const valid = await matchPassword(password, user.password_hash);
-
+        
         if (!valid) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
@@ -80,11 +80,17 @@ export const login = async (req:Request<{},{},loginBody>, res:Response) : Promis
             sameSite:"strict",
             maxAge:24*60*60*1000
         });
+
+        const {password_hash,...loggedInUser}=user;
         res.status(200).json({
             message: "Login successful",
+            userInfo:loggedInUser,
         });
     } catch (error) {
         const err = error as Error;
         res.status(500).json({ message: err.message });
     }
 }
+export const getMe = async (req:Request<{},{},{}>, res:Response) => {
+  return res.status(200).json(req.user);
+};
