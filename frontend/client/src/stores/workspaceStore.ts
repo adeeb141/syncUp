@@ -1,17 +1,17 @@
-import { workspace } from "@/types";
+import { workspacePageInfo } from "@/types";
 import {create} from "zustand";
 
 type StoreType={
-   workspaces:workspace[],
+   workspaces:workspacePageInfo[],
    isLoadingWorkspaces:boolean,
-   setWorkspaces:(fetchResult:workspace[])=>void,
+   setWorkspaces:(fetchResult:workspacePageInfo[])=>void,
    setLoadingWorkspaces:(value:boolean)=>void
 }
 
 export const useWorkspaceStore= create<StoreType>((set)=>({
    workspaces:[],
    isLoadingWorkspaces:true,
-   setWorkspaces:(fetchResult:workspace[])=>{
+   setWorkspaces:(fetchResult:workspacePageInfo[])=>{
        set({workspaces:fetchResult})
    },
    setLoadingWorkspaces:(value:boolean)=>{

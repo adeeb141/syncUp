@@ -1,12 +1,12 @@
 "use client"
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { api } from "@/lib/api";
-import { workspace } from "@/types";
+import { workspacePageInfo } from "@/types";
 import { useEffect } from "react";
 export const WorkspaceProvider=()=>{
    const{setWorkspaces,setLoadingWorkspaces}=useWorkspaceStore();
    interface workspacesObject{
-    workspaces:workspace[]
+    workspaces:workspacePageInfo[]
    }
    useEffect(()=>{
     console.log("Hello");

@@ -11,6 +11,13 @@ export type workspace={
     slug:string,
     owner_id:string,
     created_at:string,
+}
+export type workspacePageInfo={
+    workspace_id:string,
+    name:string,
+    slug:string,
+    owner_id:string,
+    created_at:string,
     role:"owner" |"admin" |"member"
 }
 export type project={
@@ -42,4 +49,10 @@ export type tasks={
     due_date:string,
     position:number,
     created_at:Date
+}
+
+export type WebsocketServerMessages={
+    type:string,
+    category:string,
+    payload:any
 }

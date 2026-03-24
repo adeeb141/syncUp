@@ -3,10 +3,10 @@ import { useState } from "react";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { api } from "@/lib/api";
 import { createSlug } from "@/lib/workspaceSlug";
-import { workspace } from "@/types";
+import { workspacePageInfo } from "@/types";
 
 interface response {
-  workspace: workspace;
+  workspace: workspacePageInfo;
 }
 
 export default function CreateWorkspacePage() {
