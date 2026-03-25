@@ -1,5 +1,6 @@
 import { pool } from "../config/DB_connect";
 import { Request, Response } from "express";
+import { getClients } from "../socket";
 interface Workspace {
   id: string;
   name: string;
@@ -119,7 +120,21 @@ export const addWorkspaceMember = async (req: Request<{ workspaceId: string }, {
        RETURNING *`,
       [workspace_id, user_id, role]
     );
+    const clients=getClients();
 
+    if(clients.has(user_id)){
+      const socket=clients.get(user_id);
+      if(socket){
+        socket.send(JSON.stringify({
+          type:"MEMBER_ADDED_TO_WORKSPACE",
+          category:"notification",
+          payload:{
+            workspaceId:workspace_id,
+            message:"You have been added to a workspace"
+          }
+      }))
+      }
+    }
     return res.status(201).json({
       message: "Member added successfully",
       member: newMember.rows[0],
@@ -201,10 +216,11 @@ export const updateRoleOfWorkspaceMembers = async (req: Request<{ workspace_id: 
   }
 }
 
-export const removeWorkspaceMembers = async (req: Request<{ workspace_id: string }, {},RemoveWorkspaceMemberBody>, res: Response):
+export const removeWorkspaceMembers = async (req: Request<{ workspaceId: string }, {},RemoveWorkspaceMemberBody>, res: Response):
   Promise<Response | void> => {
   try {
-    const workspace_id = req.params.workspace_id;
+    const workspace_id = req.params.workspaceId;
+    console.log(workspace_id);
     const remover_id = req.user?.id;
     const user_id=req.body.user_id;
 

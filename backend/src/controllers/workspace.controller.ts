@@ -182,7 +182,7 @@ export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response)
             return res.status(401).json({ message: "Unauthorized" });
         }
 
-        //return the workspaces of the user
+        //return the workspaces of the use
         const userWorkspaces = await pool.query(
             `SELECT wm.workspace_id,w.name,w.slug,w.owner_id,w.created_at,wm.role
              FROM workspace_members wm
@@ -199,6 +199,7 @@ export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response)
 
     } catch (e) {
         const err = e as Error;
+        
         res.status(500).json({ message: err.message });
     }
 }
@@ -206,12 +207,13 @@ export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response)
 export const getWorkspaceProjectsAndMembers = async (req: Request<{ workspace_id: string }, {}, {}>, res: Response):
     Promise<Response | void> => {
     try {
+
         const workspace_id = req.params.workspace_id;
 
         //check if workspace exist and return the workspace's info
         const check=await pool.query(`
-            SELECT FROM workspaces WHERE id=${1}`,
-            [workspace_id])
+            SELECT FROM workspaces WHERE id=$1`,
+            [workspace_id]);
         if(check.rowCount===0){
             return res.status(404).json({ message: "Workspace doesnt exist" });
         }
@@ -238,6 +240,7 @@ export const getWorkspaceProjectsAndMembers = async (req: Request<{ workspace_id
         })
     } catch (e) {
         const err = e as Error;
+        console.log(err);
         res.status(500).json({ message: err.message });
     }
 }
