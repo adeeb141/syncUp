@@ -3,17 +3,15 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { tasks } from "@/types";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AddTaskModal } from "@/components/ui/modals/AddTaskModal";
+import { useTaskStore, TaskRow } from "@/stores/taskStore";
 
 interface TasksApiResponse {
   project_id: string;
   total: number;
-  tasks: (tasks & { assignee_name: string | null; created_by_name: string | null; updated_at: string })[];
+  tasks: TaskRow[];
 }
-
-type TaskRow = TasksApiResponse["tasks"][number];
 
 const STATUS_META: Record<string, { label: string; dot: string; bg: string; text: string }> = {
   todo: { label: "To Do", dot: "bg-surface-variant", bg: "bg-surface-container-high", text: "text-on-surface-variant" },
@@ -52,10 +50,12 @@ export default function ProjectsIdPage() {
   const projectId = Array.isArray(projectid) ? projectid[0] : projectid;
   const wsId = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
 
-  const [taskList, setTaskList] = useState<TaskRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
+  // Read from Zustand task store
+  const taskList = useTaskStore((s) => s.tasks);
+  const tasksLoading = useTaskStore((s) => s.isLoading);
+  const { setTasks, setLoading: setTasksLoading } = useTaskStore();
 
+  const [error, setError] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -65,25 +65,24 @@ export default function ProjectsIdPage() {
     if (!projectId) return;
 
     const fetchTasks = async () => {
-      setIsLoading(true);
+      setTasksLoading(true);
       try {
         const data = await api.get<TasksApiResponse>(
           `/api/workspaces/${projectId}/tasksinfo`
         );
-        setTaskList(data.tasks);
+        setTasks(projectId, data.tasks);
         setError(false);
       } catch (e) {
         console.error(e);
         setError(true);
-      } finally {
-        setIsLoading(false);
+        setTasksLoading(false);
       }
     };
 
     fetchTasks();
   }, [projectId]);
 
-  if (isLoading) return <LoadingScreen />;
+  if (tasksLoading) return <LoadingScreen />;
 
   const filtered = taskList.filter((t) => {
     const matchPriority = priorityFilter === "all" || t.priority === priorityFilter;

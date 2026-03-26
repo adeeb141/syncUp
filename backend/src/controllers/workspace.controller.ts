@@ -226,7 +226,7 @@ export const getWorkspaceProjectsAndMembers = async (req: Request<{ workspace_id
              WHERE wm.workspace_id = $1;`,
             [workspace_id]),
             pool.query(
-            ` SELECT id, name, created_by
+            ` SELECT id,name,description,status,created_by,created_at
               FROM projects
               WHERE workspace_id = $1`,
              [workspace_id])

@@ -25,8 +25,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const navItems = [
     { icon: "dashboard", label: "Dashboard", href: "#",  },
     { icon: "group_work", label: "Workspaces", href: "/workspaces" },
-    { icon: "account_tree", label: "Projects", href: "#" },
-    { icon: "task_alt", label: "My Tasks", href: "#" },
+    { icon: "account_tree", label: "Projects", href: "/projects" },
+    { icon: "task_alt", label: "My Tasks", href: "/tasks" },
     { icon: "notifications", label: "Notifications", href: "#" },
     { icon: "settings", label: "Settings", href: "#" },
   ];

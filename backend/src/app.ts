@@ -4,7 +4,7 @@ import authRoutes from "./routes/auth.routes";
 import workspaceRoutes from "./routes/workspace.routes";
 import cookieParser from "cookie-parser";
 import addWorkspaceMemberRoutes from "./routes/workspaceMember.routes";
-import addProjectToWorkspaceRoutes from "./routes/project.routes";
+import ProjectRoutes from "./routes/project.routes";
 import taskRoutes from "./routes/tasks.routes"
 const app = express();
 
@@ -18,7 +18,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces",workspaceRoutes);
 app.use("/api/workspaces",addWorkspaceMemberRoutes);
-app.use("/api/workspaces",addProjectToWorkspaceRoutes);
+app.use("/api/workspaces",ProjectRoutes);
 app.use("/api/workspaces/projects",taskRoutes);
 
 

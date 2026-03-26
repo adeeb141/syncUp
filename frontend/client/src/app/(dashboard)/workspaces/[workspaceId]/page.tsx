@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { ManageMembersModal } from "@/components/ui/modals/ManageMembersModal";
+import { useProjectStore } from "@/stores/projectStore";
+import { useMemberStore } from "@/stores/memberStore";
 
 interface ApiResponse {
   workspaceMembers: workspace_member[];
@@ -25,13 +27,22 @@ const PROJECT_ICONS = [
 export default function WorkspaceIdPage() {
   const { workspaceId } = useParams();
   const workspaceIdParam = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
-  const [workspaceMembers, setWorkspaceMembers] = useState<workspace_member[]>([]);
-  const [workspaceProjects, setWorkspaceProjects] = useState<project[]>([]);
+
+  // Read from Zustand stores
+  const workspaceProjects = useProjectStore((s) => s.projects);
+  const projectsLoading = useProjectStore((s) => s.isLoading);
+  const { setProjects, setLoading: setProjectsLoading } = useProjectStore();
+
+  const workspaceMembers = useMemberStore((s) => s.members);
+  const membersLoading = useMemberStore((s) => s.isLoading);
+  const { setMembers, setLoading: setMembersLoading } = useMemberStore();
+
   const [error, setError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [showMembers, setShowMembers] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
   const router = useRouter();
+
+  const isLoading = projectsLoading || membersLoading;
 
   useEffect(() => {
     if (!workspaceIdParam) {
@@ -39,17 +50,18 @@ export default function WorkspaceIdPage() {
     }
 
     const fetchWorkspaceInfo = async () => {
-      setIsLoading(true);
+      setProjectsLoading(true);
+      setMembersLoading(true);
       try {
         const response = await api.get<ApiResponse>(`/api/workspaces/${workspaceIdParam}/getinfo`);
-        setWorkspaceMembers(response.workspaceMembers);
-        setWorkspaceProjects(response.workspaceProjects);
+        setMembers(workspaceIdParam, response.workspaceMembers);
+        setProjects(workspaceIdParam, response.workspaceProjects);
         setError(false);
       } catch (e) {
         console.log(e);
         setError(true);
-      } finally {
-        setIsLoading(false);
+        setProjectsLoading(false);
+        setMembersLoading(false);
       }
     };
 
