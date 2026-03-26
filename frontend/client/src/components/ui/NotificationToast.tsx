@@ -46,32 +46,32 @@ const TYPE_CONFIG: Record<string, TypeConfig> = {
     iconColor: "#2a8a5e",
     stripeStyle: { background: "linear-gradient(180deg, #2a8a5e, #3db87f)" },
     timerStyle: { background: "linear-gradient(90deg, #2a8a5e, #3db87f)" },
-    bgColor: "color-mix(in oklab, #2a8a5e 10%, var(--surface-1))",
-    borderColor: "color-mix(in oklab, #2a8a5e 30%, var(--surface-border))",
+    bgColor: "color-mix(in oklab, #2a8a5e 10%, #f7f9fb)",
+    borderColor: "color-mix(in oklab, #2a8a5e 30%, #acb3b7)",
   },
   error: {
     icon: <ErrorIcon />,
-    iconColor: "var(--destructive)",
-    stripeStyle: { background: "var(--destructive)" },
-    timerStyle: { background: "var(--destructive)" },
-    bgColor: "color-mix(in oklab, var(--destructive) 10%, var(--surface-1))",
-    borderColor: "color-mix(in oklab, var(--destructive) 30%, var(--surface-border))",
+    iconColor: "#a83836",
+    stripeStyle: { background: "#a83836" },
+    timerStyle: { background: "#a83836" },
+    bgColor: "color-mix(in oklab, #a83836 10%, #f7f9fb)",
+    borderColor: "color-mix(in oklab, #a83836 30%, #acb3b7)",
   },
   warning: {
     icon: <WarnIcon />,
     iconColor: "#b88a2e",
     stripeStyle: { background: "linear-gradient(180deg, #b88a2e, #e0b04a)" },
     timerStyle: { background: "linear-gradient(90deg, #b88a2e, #e0b04a)" },
-    bgColor: "color-mix(in oklab, #b88a2e 10%, var(--surface-1))",
-    borderColor: "color-mix(in oklab, #b88a2e 30%, var(--surface-border))",
+    bgColor: "color-mix(in oklab, #b88a2e 10%, #f7f9fb)",
+    borderColor: "color-mix(in oklab, #b88a2e 30%, #acb3b7)",
   },
   info: {
     icon: <InfoIcon />,
-    iconColor: "var(--accent-solid)",
-    stripeStyle: { background: "var(--accent-gradient)" },
-    timerStyle: { background: "var(--accent-gradient)" },
-    bgColor: "color-mix(in oklab, var(--accent-solid) 10%, var(--surface-1))",
-    borderColor: "color-mix(in oklab, var(--accent-solid) 30%, var(--surface-border))",
+    iconColor: "#575f75",
+    stripeStyle: { background: "linear-gradient(145deg, #575f75, #4b5369)" },
+    timerStyle: { background: "linear-gradient(145deg, #575f75, #4b5369)" },
+    bgColor: "color-mix(in oklab, #575f75 10%, #f7f9fb)",
+    borderColor: "color-mix(in oklab, #575f75 30%, #acb3b7)",
   },
 };
 
@@ -111,10 +111,10 @@ function Toast({ id, message, type }: { id: string; message: string; type: strin
         paddingBottom: "0.85rem",
         paddingLeft: "1.1rem",
         paddingRight: "0.9rem",
-        borderRadius: "var(--radius)",
+        borderRadius: "0.75rem",
         border: `1px solid ${cfg.borderColor}`,
         background: cfg.bgColor,
-        boxShadow: "var(--shadow-soft)",
+        boxShadow: "0 12px 34px rgba(44,52,55,0.08), 0 2px 8px rgba(44,52,55,0.06)",
         backdropFilter: "blur(16px)",
         minWidth: "300px",
         maxWidth: "380px",
@@ -146,7 +146,7 @@ function Toast({ id, message, type }: { id: string; message: string; type: strin
         fontSize: "0.875rem",
         lineHeight: 1.55,
         fontWeight: 500,
-        color: "var(--text-primary)",
+        color: "#2c3437",
         wordBreak: "break-word",
       }}>
         {message}
@@ -167,17 +167,17 @@ function Toast({ id, message, type }: { id: string; message: string; type: strin
           borderRadius: "6px",
           border: "none",
           background: "transparent",
-          color: "var(--text-muted)",
+          color: "#747c80",
           cursor: "pointer",
           transition: "background 160ms ease, color 160ms ease",
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "color-mix(in oklab, var(--text-muted) 14%, transparent)";
-          (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)";
+          (e.currentTarget as HTMLButtonElement).style.background = "rgba(116,124,128,0.14)";
+          (e.currentTarget as HTMLButtonElement).style.color = "#596064";
         }}
         onMouseLeave={(e) => {
           (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-          (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)";
+          (e.currentTarget as HTMLButtonElement).style.color = "#747c80";
         }}
       >
         <CloseIcon />

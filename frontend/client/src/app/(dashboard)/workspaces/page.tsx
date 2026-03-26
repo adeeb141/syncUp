@@ -4,19 +4,14 @@
   import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
   const COLORS = [
-    "from-[#6e81bd] to-[#5f95b2]",
-    "from-[#7e79b4] to-[#6287b9]",
-    "from-[#678eb5] to-[#5a9e9e]",
-    "from-[#6f88a8] to-[#6c9a9c]",
-    "from-[#8a7ba6] to-[#6e86a8]",
-    "from-[#7f86ae] to-[#6f92b5]",
+    "bg-primary-container text-primary",
+    "bg-secondary-container text-on-secondary-container",
+    "bg-tertiary-container/20 text-tertiary",
+    "bg-surface-container-high text-on-surface-variant",
   ];
-
-  function roleBadgeClass(role: string) {
-    if (role === "owner") return "sync-badge border-[rgba(82,108,176,0.35)] bg-[rgba(82,108,176,0.16)] text-[color:var(--accent-solid)]";
-    if (role === "admin") return "sync-badge border-[rgba(82,138,162,0.35)] bg-[rgba(82,138,162,0.16)] text-[color:#3e7087]";
-    return "sync-badge border-[color:var(--surface-border)] bg-[color:var(--surface-2)] text-[color:var(--text-secondary)]";
-  }
+  const ICONS = [
+    "domain", "domain", "domain", "domain"
+  ]
 
   export default function WorkspacesPage() {
     const workspaces = useWorkspaceStore((s) => s.workspaces);
@@ -28,79 +23,128 @@
     };
 
     if (isLoadingWorkspaces) {
-      <LoadingScreen></LoadingScreen>;
+      return <LoadingScreen />;
     }
 
     const redirectToWorkspace = (id: string) => {
       router.push(`/workspaces/${id}`);
-      <LoadingScreen></LoadingScreen>;
     };
 
     return (
-      <div className="space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--surface-border)] pb-5">
-          <div className="animate-[slideInRight_0.4s_ease_both]">
-            <h1 className="sync-title mb-1 text-[1.85rem]">Workspaces</h1>
-            <p className="text-sm text-[color:var(--text-muted)]">
-              {workspaces.length} workspace{workspaces.length !== 1 ? "s" : ""} available
-            </p>
+      <div className="pb-12 px-10 max-w-7xl mx-auto pt-8">
+        {/* Header Section */}
+        <div className="flex items-end justify-between mb-10 mt-2">
+          <div>
+            <h1 className="text-3xl font-manrope font-extrabold text-on-surface tracking-tight mb-2">Workspaces</h1>
+            <p className="text-on-surface-variant font-body">Manage your collaborative environments and creative teams.</p>
           </div>
-          <button
-            className="sync-btn-primary flex items-center gap-2 rounded-xl px-5 py-2.5 text-[0.82rem] font-semibold animate-[slideInRight_0.4s_ease_0.1s_both]"
-            onClick={toCreatePage}
-          >
-            <span className="text-lg leading-none">+</span> New workspace
-          </button>
+          <div className="flex gap-3">
+            <button className="px-4 py-2 bg-surface-container-high rounded-lg font-manrope font-semibold text-sm text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center gap-2">
+              <span className="material-symbols-outlined text-lg">filter_list</span>
+              Filter
+            </button>
+            <button 
+              onClick={toCreatePage}
+              className="px-4 py-2 bg-gradient-to-br from-primary to-primary-dim rounded-lg font-manrope font-semibold text-sm text-white flex items-center gap-2 shadow-sm hover:opacity-90 transition-opacity">
+              <span className="material-symbols-outlined text-lg">add_circle</span>
+              Create Workspace
+            </button>
+          </div>
         </div>
 
         {workspaces.length === 0 ? (
-          <div className="sync-card rounded-3xl p-12 text-center animate-[fadeUp_0.5s_ease_0.2s_both]">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[color:var(--surface-border)] bg-[color:var(--surface-2)]">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[color:var(--text-muted)]">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div onClick={toCreatePage} className="border-2 border-dashed border-outline-variant/30 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-surface-container-low transition-all cursor-pointer group max-w-sm w-full bg-surface-container-lowest">
+              <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant mb-4 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">add</span>
+              </div>
+              <h3 className="font-manrope font-bold text-on-surface mb-1 text-lg">Create New Workspace</h3>
+              <p className="text-on-surface-variant text-sm font-body">Launch a new dedicated studio for your next big idea.</p>
             </div>
-            <h3 className="sync-title mb-2 text-[1.1rem]">No workspaces yet</h3>
-            <p className="mx-auto max-w-[280px] text-sm text-[color:var(--text-muted)]">
-              Create your first workspace to start collaborating with your team.
-            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {workspaces.map((ws, i) => (
               <div
                 key={ws.workspace_id}
                 onClick={() => redirectToWorkspace(ws.workspace_id)}
-              
-                className="sync-card group cursor-pointer rounded-3xl p-6"
-                style={{ animation: `fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) ${0.15 + i * 0.08}s both` }}
+                className="bg-surface-container-lowest rounded-xl p-6 transition-all duration-300 border border-outline-variant/20 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-outline-variant/40 hover:-translate-y-1 group relative cursor-pointer"
               >
-                <div className="mb-5 flex items-start justify-between">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${COLORS[i % COLORS.length]} font-[var(--font-heading)] text-[1.05rem] font-bold text-[color:var(--primary-foreground)] shadow-[0_6px_14px_rgba(60,85,136,0.28)] transition-transform duration-300 group-hover:scale-105`}>
-                    {ws.name.charAt(0).toUpperCase()}
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${COLORS[i % COLORS.length]}`}>
+                    <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                        {ICONS[i % ICONS.length]}
+                    </span>
                   </div>
-                  <span className={roleBadgeClass(ws.role)}>
-                    {ws.role}
-                  </span>
+                  <button className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-surface-container-low rounded" onClick={(e) => e.stopPropagation()}>
+                    <span className="material-symbols-outlined">more_vert</span>
+                  </button>
                 </div>
-
-                <h3 className="sync-title mb-1.5 truncate text-[1.02rem] transition-colors group-hover:text-[color:var(--accent-solid)]">
-                  {ws.name}
-                </h3>
-                <p className="text-[0.82rem] text-[color:var(--text-muted)]">
-                  Created {new Date(ws.created_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                
+                <h3 className="font-manrope font-bold text-lg text-on-surface mb-2">{ws.name}</h3>
+                <p className="text-on-surface-variant text-sm font-body leading-relaxed mb-6 line-clamp-2">
+                    Collaborative workspace for {ws.name}. Role: <span className="uppercase text-xs font-bold">{ws.role}</span>
                 </p>
-
-                <div className="my-4 h-px bg-[color:var(--surface-border)]" />
-
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-2)] text-[0.68rem] font-bold text-[color:var(--text-secondary)]">
-                    {ws.owner_id.charAt(0).toUpperCase()}
+                
+                <div className="flex items-center justify-between pt-4 border-t border-surface-container-high/50">
+                  <div className="flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full bg-primary border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                        {ws.owner_id.substring(0,2)}
+                    </div>
                   </div>
-                  <span className="truncate text-xs font-medium text-[color:var(--text-muted)]">{ws.owner_id}</span>
+                  <div className="text-right">
+                    <span className="block text-xs font-bold text-on-surface">Owner</span>
+                    <span className="block text-[10px] text-on-surface-variant uppercase tracking-wider">{ws.owner_id}</span>
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex gap-2">
+                  <button className="flex-1 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-xs font-bold text-on-surface" onClick={(e) => { e.stopPropagation(); redirectToWorkspace(ws.workspace_id); }}>
+                     Enter Workspace
+                  </button>
+                  <button className="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface-variant" onClick={(e) => e.stopPropagation()}>
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                  </button>
                 </div>
               </div>
             ))}
+            
+            {/* Add New Workspace Empty State Card */}
+            <div onClick={toCreatePage} className="border-2 border-dashed border-outline-variant/30 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-surface-container-low transition-all cursor-pointer group">
+              <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant mb-4 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-2xl">add</span>
+              </div>
+              <h3 className="font-manrope font-bold text-on-surface mb-1">Create New Workspace</h3>
+              <p className="text-on-surface-variant text-xs font-body max-w-[200px]">Launch a new dedicated studio for your next big idea.</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Mock Stats/Activity Section */}
+        {workspaces.length > 0 && (
+          <div className="mt-16 grid grid-cols-12 gap-8">
+            <div className="col-span-12 lg:col-span-8 bg-surface-container-low rounded-2xl p-8">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-xl font-manrope font-extrabold text-on-surface">Recent Activity</h2>
+                <button className="text-primary text-sm font-bold hover:underline">View All</button>
+              </div>
+              <div className="space-y-6">
+                 <div className="text-sm text-on-surface-variant italic">Activity feed will appear here as your team collaborates.</div>
+              </div>
+            </div>
+            
+            <div className="col-span-12 lg:col-span-4 space-y-6">
+              <div className="bg-gradient-to-br from-primary to-primary-dim p-8 rounded-2xl text-white shadow-xl">
+                <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-70">Workspace Insights</span>
+                <div className="mt-4 mb-8">
+                  <span className="text-4xl font-manrope font-extrabold tracking-tighter">84%</span>
+                  <p className="text-sm opacity-80 mt-1">Utilization across all studios</p>
+                </div>
+                <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-white h-full" style={{ width: "84%" }}></div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
