@@ -80,8 +80,15 @@ export default function WorkspaceIdPage() {
           <h2 className="font-headline text-3xl font-extrabold text-on-surface tracking-tight">Daily Overview</h2>
           <p className="text-on-surface-variant mt-1 font-medium">Welcome back, your workspace is seeing high activity today.</p>
         </div>
-        <div className="flex gap-2 text-xs font-semibold">
-          <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full flex items-center gap-1">
+        <div className="flex items-center gap-4 text-xs font-semibold">
+          <Link 
+            href={`/workspaces/${workspaceIdParam}/doc/new`}
+            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-sm">post_add</span>
+            Create Document
+          </Link>
+          <span className="bg-secondary-container text-on-secondary-container px-3 py-2 rounded-full flex items-center gap-1">
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
             +12% Productivity
           </span>
