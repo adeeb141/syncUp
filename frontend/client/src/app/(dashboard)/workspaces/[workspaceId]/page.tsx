@@ -41,10 +41,10 @@ export default function WorkspaceIdPage() {
   const [error, setError] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
-  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
-  const router = useRouter();
 
-  const isLoading = projectsLoading || membersLoading;
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
     if (!workspaceIdParam) {
@@ -73,7 +73,6 @@ export default function WorkspaceIdPage() {
   if (isLoading) {
     return <LoadingScreen />;
   }
-
   return (
     <div className="p-10 space-y-10 max-w-7xl mx-auto">
       {/* Header Section */}
@@ -202,7 +201,6 @@ export default function WorkspaceIdPage() {
                   </div>
                   <h5 className="font-headline font-bold text-on-surface group-hover:text-primary transition-colors">{projectItem.name}</h5>
                   <p className="text-on-surface-variant text-xs mt-1 mb-4 line-clamp-2 min-h-[2rem]">{projectItem.description || "No description provided."}</p>
-
                   <div className="flex items-center justify-between mt-auto">
                     <div className="w-full bg-surface-container-high h-1 rounded-full overflow-hidden mr-4">
                       <div className="bg-tertiary w-[50%] h-full rounded-full"></div>
@@ -255,7 +253,6 @@ export default function WorkspaceIdPage() {
           <div className="relative bg-surface-container-low rounded-xl p-6">
             <div className="space-y-8 relative">
               <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-outline-variant opacity-20"></div>
-
               <div className="relative flex gap-4">
                 <div className="z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                   <span className="material-symbols-outlined text-[12px] text-on-primary">upload</span>
@@ -292,7 +289,6 @@ export default function WorkspaceIdPage() {
           </div>
         </div>
       </div>
-
       <button className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform active:scale-95 group z-50">
         <span className="material-symbols-outlined text-3xl">add</span>
         <span className="absolute right-16 bg-on-surface text-surface text-xs font-bold py-1 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">New Task</span>
