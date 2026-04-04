@@ -18,6 +18,7 @@ interface workspaceMember {
 interface WorkspaceReqBody {
     name: string,
     slug: string,
+    description:string;
 }
 
 export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, res: Response): Promise<Response | void> => {
@@ -27,7 +28,7 @@ export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, re
 
         await client.query("BEGIN");
 
-        const { name, slug } = req.body;
+        const { name, slug, description } = req.body;
 
         const userId = req.user?.id;
 
@@ -35,7 +36,7 @@ export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, re
             return res.status(400).json({ message: "Name and slug are required" });
         }
 
-        const workspace = await client.query<Workspace>("INSERT INTO workspaces (name,slug,owner_id) VALUES ($1,$2,$3) RETURNING *", [name, slug, userId]);
+        const workspace = await client.query<Workspace>("INSERT INTO workspaces (name,slug,owner_id,description) VALUES ($1,$2,$3,$4) RETURNING *", [name, slug, userId, description]);
 
         const workspace_id = workspace.rows[0].id;
 
@@ -110,6 +111,7 @@ export const deleteWorkspace = async (req: Request<{ workspace_id: string }, {},
 interface UpdateWorkspaceBody {
     newName?: string,
     newSlug?: string,
+    description?:string
 }
 
 export const updateWorkspace = async (req: Request<{ workspace_id: string }, {}, UpdateWorkspaceBody>, res: Response):
@@ -125,8 +127,9 @@ export const updateWorkspace = async (req: Request<{ workspace_id: string }, {},
 
         const newName = req.body.newName ?? null;
         const newSlug = req.body.newSlug ?? null;
+        const description = req.body.description ?? null;
 
-        if (!newName && !newSlug) {
+        if (!newName && !newSlug && !description) {
             return res.status(400).json({ message: "Nothing to update" });
         }
         //check if workspace exist and user is owner or admin of the workspace
@@ -153,13 +156,14 @@ export const updateWorkspace = async (req: Request<{ workspace_id: string }, {},
         const update = await pool.query<Workspace>(
             `UPDATE workspaces 
              SET name=COALESCE($2,name),
-                 slug=COALESCE($3,slug)
+                 slug=COALESCE($3,slug),
+                 description = COALESCE($4, description)
              WHERE id=$1
              RETURNING *`,
-            [workspace_id, newName, newSlug]
+            [workspace_id, newName, newSlug, description]
         );
 
-        return res.status(200).json({ message: "Update Successful", update: update.rows[0] });
+        return res.status(200).json({ message: "Update Successful", workspace: update.rows[0] });
 
     } catch (e) {
         const err = e as any;
@@ -184,7 +188,7 @@ export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response)
 
         //return the workspaces of the use
         const userWorkspaces = await pool.query(
-            `SELECT wm.workspace_id,w.name,w.slug,w.owner_id,w.created_at,wm.role
+            `SELECT wm.workspace_id,w.name,w.slug,w.owner_id,w.created_at,w.description,wm.role
              FROM workspace_members wm
              JOIN workspaces w
              ON wm.workspace_id=w.id AND wm.user_id=$1`,

@@ -3,7 +3,7 @@ import { addProjectToWorkspace, getProjectTasks, getUserProjects } from "../cont
 import { requireAuth } from "../middlewares/requireAuth";
 const router=Router();
 
-router.post("/:workspace_id/addproject",requireAuth,addProjectToWorkspace);
+router.post("/:workspace_id/projects", requireAuth, addProjectToWorkspace);
 router.get("/:project_id/tasksinfo",requireAuth,getProjectTasks);
 router.get("/my-projects", requireAuth, getUserProjects);
 

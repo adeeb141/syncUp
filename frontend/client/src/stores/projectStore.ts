@@ -27,7 +27,14 @@ export const useProjectStore = create<ProjectStoreType>((set) => ({
   },
 
   addProject: (project) => {
-    set((state) => ({ projects: [...state.projects, project] }));
+    set((state) => {
+      if (state.currentWorkspaceId !== project.workspace_id) return state;
+
+      const exists = state.projects.some((p) => p.id === project.id);
+      if (exists) return state;
+
+      return { projects: [project, ...state.projects] };
+    });
   },
 
   updateProject: (projectId, updates) => {

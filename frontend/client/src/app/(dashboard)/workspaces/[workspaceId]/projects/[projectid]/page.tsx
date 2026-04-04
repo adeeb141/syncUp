@@ -110,15 +110,34 @@ export default function ProjectsIdPage() {
         <div className="flex gap-3">
           <div className="relative">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<<<<<<< HEAD
+            <input
+              type="text"
+              placeholder="Search tasks..."
+=======
             <input 
               type="text" 
               placeholder="Search tasks..." 
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-4 py-2 bg-surface-container-high focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary/30 rounded-lg text-sm text-on-surface w-64 transition-all outline-none border border-transparent focus:border-outline-variant/30"
             />
           </div>
           <div className="flex items-center bg-surface-container-high rounded-lg p-1">
+<<<<<<< HEAD
+            {FILTER_PRIORITIES.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPriorityFilter(p)}
+                className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${priorityFilter === p ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+              >
+                {p === "all" ? "All" : PRIORITY_META[p].label}
+              </button>
+            ))}
+          </div>
+          <button
+=======
              {FILTER_PRIORITIES.map((p) => (
                 <button
                   key={p}
@@ -130,6 +149,7 @@ export default function ProjectsIdPage() {
              ))}
           </div>
           <button 
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
             onClick={() => setShowAddTask(true)}
             className="px-4 py-2 bg-gradient-to-br from-primary to-primary-dim rounded-lg font-manrope font-semibold text-sm text-white flex items-center gap-2 shadow-sm hover:opacity-90"
           >
@@ -147,6 +167,28 @@ export default function ProjectsIdPage() {
 
       {/* ── Kanban Board ── */}
       <div className="flex gap-6 overflow-x-auto overflow-y-hidden pb-4 pb-8 min-h-0 flex-1">
+<<<<<<< HEAD
+
+        <Column
+          title="To Do"
+          tasks={todoTasks}
+          statusKey="todo"
+          onExpand={(id) => setExpandedId(id)}
+        />
+
+        <Column
+          title="In Progress"
+          tasks={inProgressTasks}
+          statusKey="in_progress"
+          onExpand={(id) => setExpandedId(id)}
+        />
+
+        <Column
+          title="Done"
+          tasks={doneTasks}
+          statusKey="done"
+          onExpand={(id) => setExpandedId(id)}
+=======
         
         <Column 
           title="To Do" 
@@ -167,6 +209,7 @@ export default function ProjectsIdPage() {
           tasks={doneTasks} 
           statusKey="done" 
           onExpand={(id) => setExpandedId(id)} 
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
         />
 
       </div>
@@ -175,18 +218,30 @@ export default function ProjectsIdPage() {
       {expandedTask && (
         <>
           {/* Backdrop */}
+<<<<<<< HEAD
+          <div
+            className="fixed inset-0 bg-inverse-surface/20 backdrop-blur-[2px] z-40 transition-opacity"
+            onClick={() => setExpandedId(null)}
+          ></div>
+
+=======
           <div 
             className="fixed inset-0 bg-inverse-surface/20 backdrop-blur-[2px] z-40 transition-opacity"
             onClick={() => setExpandedId(null)}
           ></div>
           
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
           {/* Panel */}
           <div className="fixed inset-y-0 right-0 w-[450px] bg-surface-container-lowest shadow-[-10px_0_30px_rgba(0,0,0,0.05)] z-50 transform transition-transform duration-300 translate-x-0 border-l border-outline-variant/10 flex flex-col">
             <div className="h-16 flex items-center justify-between px-6 border-b border-outline-variant/10 bg-surface/50 backdrop-blur-sm shrink-0">
               <div className="flex items-center gap-3">
                 <button onClick={() => setExpandedId(null)} className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-1 rounded-full"><span className="material-symbols-outlined">first_page</span></button>
                 <span className={`${STATUS_META[expandedTask.status]?.bg || STATUS_META.todo.bg} ${STATUS_META[expandedTask.status]?.text || STATUS_META.todo.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>
+<<<<<<< HEAD
+                  {STATUS_META[expandedTask.status]?.label || STATUS_META.todo.label}
+=======
                     {STATUS_META[expandedTask.status]?.label || STATUS_META.todo.label}
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -196,7 +251,11 @@ export default function ProjectsIdPage() {
                 <button onClick={() => setExpandedId(null)} className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors"><span className="material-symbols-outlined text-sm">close</span></button>
               </div>
             </div>
+<<<<<<< HEAD
+
+=======
             
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
             <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
               {/* Title & Desc */}
               <div>
@@ -218,7 +277,11 @@ export default function ProjectsIdPage() {
                     <span className="text-sm font-semibold text-on-surface">{expandedTask.assignee_name || "Unassigned"}</span>
                   </div>
                 </div>
+<<<<<<< HEAD
+
+=======
                 
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
                 <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 flex flex-col gap-1 hover:border-primary/20 transition-colors cursor-pointer group">
                   <span className="text-[10px] font-bold uppercase text-on-surface-variant group-hover:text-primary transition-colors">Due Date</span>
                   <div className="flex items-center gap-2 mt-1">
@@ -230,9 +293,15 @@ export default function ProjectsIdPage() {
                 <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 flex flex-col gap-1 hover:border-primary/20 transition-colors cursor-pointer group">
                   <span className="text-[10px] font-bold uppercase text-on-surface-variant group-hover:text-primary transition-colors">Priority</span>
                   <div className="flex items-center gap-2 mt-1">
+<<<<<<< HEAD
+                    <span className={`${PRIORITY_META[expandedTask.priority]?.bg || PRIORITY_META.low.bg} ${PRIORITY_META[expandedTask.priority]?.text || PRIORITY_META.low.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>
+                      {PRIORITY_META[expandedTask.priority]?.label || PRIORITY_META.low.label}
+                    </span>
+=======
                      <span className={`${PRIORITY_META[expandedTask.priority]?.bg || PRIORITY_META.low.bg} ${PRIORITY_META[expandedTask.priority]?.text || PRIORITY_META.low.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>
                         {PRIORITY_META[expandedTask.priority]?.label || PRIORITY_META.low.label}
                      </span>
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
                   </div>
                 </div>
 
@@ -241,16 +310,31 @@ export default function ProjectsIdPage() {
                   <span className="text-sm font-semibold text-on-surface mt-1 truncate">{expandedTask.created_by_name || "—"}</span>
                 </div>
               </div>
+<<<<<<< HEAD
+
+              <div className="text-[10px] text-center text-outline-variant uppercase tracking-widest pt-4 border-t border-outline-variant/10">
+                Task ID: {expandedTask.id.substring(0, 8)} • Created: {formatDate(String(expandedTask.created_at))}
+=======
               
               <div className="text-[10px] text-center text-outline-variant uppercase tracking-widest pt-4 border-t border-outline-variant/10">
                  Task ID: {expandedTask.id.substring(0,8)} • Created: {formatDate(String(expandedTask.created_at))}
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
               </div>
             </div>
           </div>
         </>
       )}
 
+<<<<<<< HEAD
+      {showAddTask && projectId && (
+        <AddTaskModal
+          projectId={projectId}
+          onClose={() => setShowAddTask(false)}
+        />
+      )}
+=======
       {showAddTask && <AddTaskModal onClose={() => setShowAddTask(false)} />}
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
     </div>
   );
 }
@@ -269,6 +353,44 @@ function Column({ title, tasks, statusKey, onExpand }: { title: string, tasks: T
       </div>
       <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-4 px-1 min-h-0">
         {tasks.map((task) => {
+<<<<<<< HEAD
+          const pm = PRIORITY_META[task.priority] || PRIORITY_META.low;
+          const overdue = task.status !== "done" && isOverdue(task.due_date);
+          return (
+            <div
+              key={task.id}
+              onClick={() => onExpand(task.id)}
+              className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-md hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing group relative"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className={`${pm.bg} ${pm.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>{pm.label}</span>
+                <button className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"><span className="material-symbols-outlined text-sm">more_horiz</span></button>
+              </div>
+              <h4 className="font-headline font-bold text-sm text-on-surface mb-1 group-hover:text-primary transition-colors">{task.title}</h4>
+              <p className="text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">{task.description || "No description provided"}</p>
+
+              <div className="flex items-center justify-between mt-auto pt-3 border-t border-outline-variant/10">
+                <div className="flex -space-x-1.5">
+                  {task.assignee_name && (
+                    <div className="w-6 h-6 rounded-full bg-secondary border-2 border-surface-container-lowest flex items-center justify-center text-[8px] font-bold text-on-secondary">
+                      {task.assignee_name.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className={`flex items-center gap-3 text-xs font-medium ${overdue ? 'text-error' : 'text-on-surface-variant'}`}>
+                  {task.due_date && (
+                    <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">schedule</span> {formatDate(task.due_date)}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {tasks.length === 0 && (
+          <div className="h-24 border-2 border-dashed border-outline-variant/20 rounded-xl flex items-center justify-center text-outline-variant text-xs font-medium">
+            No tasks in this column
+          </div>
+=======
            const pm = PRIORITY_META[task.priority] || PRIORITY_META.low;
            const overdue = task.status !== "done" && isOverdue(task.due_date);
            return (
@@ -305,6 +427,7 @@ function Column({ title, tasks, statusKey, onExpand }: { title: string, tasks: T
            <div className="h-24 border-2 border-dashed border-outline-variant/20 rounded-xl flex items-center justify-center text-outline-variant text-xs font-medium">
               No tasks in this column
            </div>
+>>>>>>> 238f89aebacaa6359b4eb8233c18b79eeda816cc
         )}
       </div>
     </div>

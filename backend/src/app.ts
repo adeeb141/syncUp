@@ -19,7 +19,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/workspaces",workspaceRoutes);
 app.use("/api/workspaces",addWorkspaceMemberRoutes);
 app.use("/api/workspaces",ProjectRoutes);
-app.use("/api/workspaces/projects",taskRoutes);
+app.use("/api/projects",taskRoutes);
 
 
 export default app;
