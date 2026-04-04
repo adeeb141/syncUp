@@ -52,10 +52,7 @@ export const addProjectToWorkspace = async (req: Request<{ workspace_id: string 
         // broadcast to all online workspace members
         await emitProjectAdded(workspace_id, newProject.rows[0]);
 
-        return res.status(201).json({
-            message: "Project added to workspace",
-            project: newProject.rows[0]
-        });
+        return res.status(201).json(newProject.rows[0]);
 
     } catch (error) {
         const err = error as any;
