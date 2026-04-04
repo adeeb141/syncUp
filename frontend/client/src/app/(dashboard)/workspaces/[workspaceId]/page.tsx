@@ -69,7 +69,7 @@ export default function WorkspaceIdPage() {
 
     fetchWorkspaceInfo();
   }, [workspaceIdParam]);
-
+  const isLoading = projectsLoading || membersLoading;
   if (isLoading) {
     return <LoadingScreen />;
   }
