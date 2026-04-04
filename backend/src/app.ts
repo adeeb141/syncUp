@@ -5,7 +5,9 @@ import workspaceRoutes from "./routes/workspace.routes";
 import cookieParser from "cookie-parser";
 import addWorkspaceMemberRoutes from "./routes/workspaceMember.routes";
 import ProjectRoutes from "./routes/project.routes";
-import taskRoutes from "./routes/tasks.routes"
+import taskRoutes from "./routes/tasks.routes";
+import utilityRoutes from "./routes/utility.routes";
+import inviteRoutes from  "./routes/workspaceInvite.routes";
 const app = express();
 
 app.use(cors({
@@ -20,6 +22,6 @@ app.use("/api/workspaces",workspaceRoutes);
 app.use("/api/workspaces",addWorkspaceMemberRoutes);
 app.use("/api/workspaces",ProjectRoutes);
 app.use("/api/workspaces/projects",taskRoutes);
-
-
+app.use("/api/utility",utilityRoutes);
+app.use("/api/invite",inviteRoutes);
 export default app;

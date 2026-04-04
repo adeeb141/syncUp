@@ -54,5 +54,6 @@ export type tasks={
 export type WebsocketServerMessages={
     type:string,
     category:string,
-    payload:any
+    payload?:any,
+    [key: string]: any
 }

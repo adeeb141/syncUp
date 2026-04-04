@@ -75,12 +75,12 @@ export default function TiptapEditor() {
       content: "",
       editorProps: {
         attributes: {
-          class: "prose prose-sm sm:prose lg:prose-lg mx-auto focus:outline-none min-h-[400px] p-6 bg-white dark:bg-gray-800 rounded-b-md border border-t-0 border-gray-200 dark:border-gray-700 w-full",
+          class: "focus:outline-none min-h-[400px] p-6 w-full text-slate-900 dark:text-slate-100 [&>p]:mb-2 [&>h1]:text-4xl [&>h1]:font-extrabold [&>h1]:mb-4 [&>h1]:mt-6 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mb-3 [&>h2]:mt-5 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:mb-4 [&_li>p]:mb-0 [&>pre]:bg-slate-800 [&>pre]:text-slate-100 [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:font-mono [&>pre]:mb-4 [&>blockquote]:border-l-4 [&>blockquote]:border-slate-300 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:mb-4",
         },
       },
       editable: status === "connected",
     },
-    [provider] // Reinitialize editor when the provider is ready
+    [provider, status] // Reinitialize editor when the provider is ready or status changes
   );
 
   if (!editor || !provider) {
@@ -183,8 +183,8 @@ export default function TiptapEditor() {
       </div>
 
       {/* Editor Main Content */}
-      <div className="relative">
-        <EditorContent editor={editor} className="[&_.collaboration-cursor\_\_caret]:border-l-[2px] [&_.collaboration-cursor\_\_caret]:border-black [&_.collaboration-cursor\_\_caret]:dark:border-white [&_.collaboration-cursor\_\_caret]:ml-[-1px] [&_.collaboration-cursor\_\_caret]:mr-[-1px] [&_.collaboration-cursor\_\_caret]:pointer-events-none [&_.collaboration-cursor\_\_caret]:relative [&_.collaboration-cursor\_\_caret]:word-break-normal [&_.collaboration-cursor\_\_label]:absolute [&_.collaboration-cursor\_\_label]:top-[-1.4em] [&_.collaboration-cursor\_\_label]:left-[-1px] [&_.collaboration-cursor\_\_label]:bg-black [&_.collaboration-cursor\_\_label]:text-white [&_.collaboration-cursor\_\_label]:px-1 [&_.collaboration-cursor\_\_label]:text-[12px] [&_.collaboration-cursor\_\_label]:leading-normal [&_.collaboration-cursor\_\_label]:font-normal [&_.collaboration-cursor\_\_label]:rounded-sm [&_.collaboration-cursor\_\_label]:whitespace-nowrap [&_.collaboration-cursor\_\_label]:rounded-tl-none [&_.prose_p]:my-2"/>
+      <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 border-t-0 rounded-b-md shadow-sm">
+        <EditorContent editor={editor} className="[&_.collaboration-cursor\_\_caret]:border-l-[2px] [&_.collaboration-cursor\_\_caret]:border-black [&_.collaboration-cursor\_\_caret]:dark:border-white [&_.collaboration-cursor\_\_caret]:ml-[-1px] [&_.collaboration-cursor\_\_caret]:mr-[-1px] [&_.collaboration-cursor\_\_caret]:pointer-events-none [&_.collaboration-cursor\_\_caret]:relative [&_.collaboration-cursor\_\_caret]:word-break-normal [&_.collaboration-cursor\_\_label]:absolute [&_.collaboration-cursor\_\_label]:top-[-1.4em] [&_.collaboration-cursor\_\_label]:left-[-1px] [&_.collaboration-cursor\_\_label]:bg-black [&_.collaboration-cursor\_\_label]:text-white [&_.collaboration-cursor\_\_label]:px-1 [&_.collaboration-cursor\_\_label]:text-[12px] [&_.collaboration-cursor\_\_label]:leading-normal [&_.collaboration-cursor\_\_label]:font-normal [&_.collaboration-cursor\_\_label]:rounded-sm [&_.collaboration-cursor\_\_label]:whitespace-nowrap [&_.collaboration-cursor\_\_label]:rounded-tl-none"/>
       </div>
     </div>
   );

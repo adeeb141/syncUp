@@ -43,6 +43,16 @@ CREATE TABLE workspace_members (
   PRIMARY KEY (workspace_id, user_id)
 );
 
+--workspace invites
+CREATE TABLE workspace_invites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  invited_user UUID REFERENCES users(id) ON DELETE CASCADE,
+  invited_by UUID REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(50) DEFAULT 'pending',
+  created_at DATE DEFAULT CURRENT_DATE
+);
+
 -- Projects
 CREATE TABLE projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
