@@ -31,6 +31,25 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     type: message.type,
                     message: message.payload.message
                 });
+            } else if (message.category === "invite") {
+                const notificationStore = useNotificationStore.getState();
+
+                if (message.type === "PENDING_INVITES") {
+                    notificationStore.setInvites(message.invites);
+                } else if (message.type === "workspace_invite") {
+                    notificationStore.addInvite({
+                        id: message.payload.id,
+                        workspace_id: message.payload.workspace_id,
+                        workspace_name: message.payload.workspace_name,
+                        invited_by_name: message.payload.invited_by_name,
+                        invited_by_email: message.payload.invited_by_email
+                    });
+                    pushNotification({
+                        id: crypto.randomUUID(),
+                        type: "info",
+                        message: "You have a new workspace invitation!"
+                    });
+                }
             } else if (message.category === "sync") {
                 const taskStore = useTaskStore.getState();
                 const projectStore = useProjectStore.getState();
@@ -52,7 +71,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                         }
                         break;
                     case "PROJECT_ADDED":
-                        projectStore.addProject(message.project);
+                        console.log("WS message PROJECT_ADDED: ", message);
+                        if (message.project) {
+                            projectStore.addProject(message.project);
+                        } else {
+                            console.error("WS error: PROJECT_ADDED missing project payload", message);
+                        }
                         break;
                     case "PROJECT_DELETED":
                         projectStore.removeProject(message.projectId);
@@ -67,6 +91,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                         break;
                     case "MEMBER_REMOVED":
                         memberStore.removeMember(message.userId);
+                        if (String(message.userId) === String(userId)) {
+                            window.location.href = "/workspaces";
+                        }
                         break;
                 }
             }
@@ -80,4 +107,4 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     }, [userId]);
 
     return <>{children}</>;
-};
+};

@@ -18,9 +18,10 @@ export const sendInvite = async (req: Request<{}, {}, { invited_user_email: stri
 
         //create db entry in workspace_invites
         const invite = await pool.query(
-            `INSERT INTO workspace_invites(workspace_id,invited_user_id,invited_by_id) VALUES ($1,$2,$3)`,
+            `INSERT INTO workspace_invites(workspace_id,invited_user_id,invited_by_id) VALUES ($1,$2,$3) RETURNING id`,
             [workspace_id, invited_user_id, invited_by_id]
         );
+        const invite_id = invite.rows[0].id;
 
         const [workspaceResult, userResult] = await Promise.all([
             pool.query("SELECT name FROM workspaces WHERE id=$1", [workspace_id]),
@@ -39,9 +40,11 @@ export const sendInvite = async (req: Request<{}, {}, { invited_user_email: stri
                 type: "workspace_invite",
                 category: "invite",
                 payload: {
+                    id: invite_id,
+                    workspace_id: workspace_id,
                     invited_by_name: user_name,
-                    invited_by_email:email,
-                    workspace_name:workspace_name
+                    invited_by_email: email,
+                    workspace_name: workspace_name
                 }
             }))
         }
@@ -60,22 +63,67 @@ export const sendInvite = async (req: Request<{}, {}, { invited_user_email: stri
     }
 }
 
-export const acceptInvite = async (req: Request<{ workspace_id: string }, {}, {}>, res: Response): Promise<Response | void> => {
+export const acceptInvite = async (req: Request<{}, {}, { workspace_id: string }>, res: Response): Promise<Response | void> => {
     try {
-        
+        const workspace_id = req.body.workspace_id;
+        const user_id = req.user?.id;
 
+        if (!workspace_id || !user_id) return res.status(400).json({ message: "Missing required fields" });
 
-    } catch {
+        const inviteCheck = await pool.query(
+            "SELECT * FROM workspace_invites WHERE workspace_id = $1 AND invited_user_id = $2 AND status = 'pending'",
+            [workspace_id, user_id]
+        );
 
+        if (inviteCheck.rowCount === 0) {
+            return res.status(404).json({ message: "No pending invite found" });
+        }
+
+        const client = await pool.connect();
+        try {
+            await client.query("BEGIN");
+            await client.query(
+                "DELETE FROM workspace_invites WHERE workspace_id = $1 AND invited_user_id = $2 AND status = 'pending'",
+                [workspace_id, user_id]
+            );
+            await client.query(
+                "INSERT INTO workspace_members (workspace_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING",
+                [workspace_id, user_id]
+            );
+            await client.query("COMMIT");
+        } catch (err) {
+            await client.query("ROLLBACK");
+            throw err;
+        } finally {
+            client.release();
+        }
+
+        return res.status(200).json({ message: "Invite accepted successfully" });
+    } catch (e) {
+        const err = e as Error;
+        return res.status(500).json({ message: err.message });
     }
 }
 
-export const rejectInvite = async (req: Request<{ workspace_id: string }, {},{}>, res: Response): Promise<Response | void> => {
+export const rejectInvite = async (req: Request<{}, {}, { workspace_id: string }>, res: Response): Promise<Response | void> => {
     try {
-        ;
+        const workspace_id = req.body.workspace_id;
+        const user_id = req.user?.id;
 
+        if (!workspace_id || !user_id) return res.status(400).json({ message: "Missing required fields" });
 
-    } catch {
+        const deleteResult = await pool.query(
+            "DELETE FROM workspace_invites WHERE workspace_id = $1 AND invited_user_id = $2 AND status = 'pending'",
+            [workspace_id, user_id]
+        );
 
+        if (deleteResult.rowCount === 0) {
+            return res.status(404).json({ message: "No pending invite found" });
+        }
+
+        return res.status(200).json({ message: "Invite rejected" });
+    } catch (e) {
+        const err = e as Error;
+        return res.status(500).json({ message: err.message });
     }
 }

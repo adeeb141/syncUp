@@ -9,6 +9,7 @@ import { ManageMembersModal } from "@/components/ui/modals/ManageMembersModal";
 import { CreateProjectModal } from "@/components/ui/modals/CreateProjectModal";
 import { useProjectStore } from "@/stores/projectStore";
 import { useMemberStore } from "@/stores/memberStore";
+import { useAuthStore } from "@/stores/authStore";
 
 interface ApiResponse {
   workspaceMembers: workspace_member[];
@@ -38,11 +39,30 @@ export default function WorkspaceIdPage() {
   const membersLoading = useMemberStore((s) => s.isLoading);
   const { setMembers, setLoading: setMembersLoading } = useMemberStore();
 
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const currentUserRole = workspaceMembers.find(m => m.user_id === currentUserId)?.role;
+
   const [error, setError] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
 
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+
+  const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    
+    setDeletingProjectId(projectId);
+    try {
+      await api.delete(`/api/workspaces/projects/${projectId}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete project");
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
 
   const router = useRouter();
 
@@ -175,7 +195,7 @@ export default function WorkspaceIdPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="font-headline text-xl font-bold text-on-surface">Recent Projects</h4>
-            <button className="text-sm text-primary font-bold hover:underline">View All</button>
+            <Link href={`/workspaces/${workspaceIdParam}/projects`} className="text-sm text-primary font-bold hover:underline">View All</Link>
           </div>
 
           {workspaceProjects.length === 0 ? (
@@ -194,17 +214,28 @@ export default function WorkspaceIdPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {workspaceProjects.map((projectItem, index) => (
+              {workspaceProjects.slice(0, 5).map((projectItem, index) => {
+                const canDelete = currentUserRole === "admin" || currentUserRole === "owner" || projectItem.created_by === currentUserId;
+                return (
                 <div
                   key={projectItem.id}
                   onClick={() => router.push(`/workspaces/${workspaceIdParam}/projects/${projectItem.id}`)}
-                  className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/5 hover:shadow-md transition-shadow group cursor-pointer"
+                  className={`bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/5 hover:shadow-md transition-shadow group relative cursor-pointer ${deletingProjectId === projectItem.id ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${PROJECT_COLORS[index % PROJECT_COLORS.length]}`}>
                       <span className="material-symbols-outlined">{PROJECT_ICONS[index % PROJECT_ICONS.length]}</span>
                     </div>
-                    <span className="bg-surface-container-high px-2 py-1 rounded text-[10px] font-bold uppercase text-on-surface-variant">{projectItem.status}</span>
+                    {canDelete && (
+                      <button
+                        onClick={(e) => handleDeleteProject(e, projectItem.id)}
+                        className="w-8 h-8 flex flex-shrink-0 items-center justify-center bg-error-container/20 text-error rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error hover:text-white"
+                        title="Delete project"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    )}
+                    <span className="bg-surface-container-high px-2 py-1 rounded text-[10px] font-bold uppercase text-on-surface-variant ml-auto">{projectItem.status}</span>
                   </div>
                   <h5 className="font-headline font-bold text-on-surface group-hover:text-primary transition-colors">{projectItem.name}</h5>
                   <p className="text-on-surface-variant text-xs mt-1 mb-4 line-clamp-2 min-h-[2rem]">{projectItem.description || "No description provided."}</p>
@@ -215,7 +246,7 @@ export default function WorkspaceIdPage() {
                     <span className="text-[10px] font-bold text-on-surface-variant">50%</span>
                   </div>
                 </div>
-              ))}
+              )})}
               {/* Add New Project Card */}
               <div
                 onClick={() => setShowCreateProjectModal(true)}

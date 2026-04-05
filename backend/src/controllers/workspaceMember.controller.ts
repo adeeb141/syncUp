@@ -1,6 +1,8 @@
 import { pool } from "../config/DB_connect";
 import { Request, Response } from "express";
 import { getClients } from "../socket";
+import { emitMemberRemoved } from "../socket/emitter";
+
 interface Workspace {
   id: string;
   name: string;
@@ -305,6 +307,8 @@ export const removeWorkspaceMembers = async (req: Request<{ workspaceId: string 
     } finally {
       client.release();
     }
+
+    await emitMemberRemoved(workspace_id, user_id);
 
     return res.status(200).json({
       message: "Member removed and unassigned from tasks",

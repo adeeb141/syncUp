@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useMemberStore } from "@/stores/memberStore";
+import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { UUID } from "crypto";
@@ -15,15 +16,31 @@ interface Res{
 }
 export function ManageMembersModal({ onClose }: { onClose?: () => void }) {
   const members = useMemberStore((store) => store.members);
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const currentUserRole = members.find((m) => m.user_id === currentUserId)?.role;
+
   const {workspaceId}=useParams();
   const [emailSearch, setEmail] = useState("");
   const [debouncedEmail, setDebouncedEmail] = useState("");
   const [searchedUsers, setSearchedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [removingMemberIds, setRemovingMemberIds] = useState<Record<string, boolean>>({});
   
   // Maps user email to their invite status: undefined | "loading" | "success" | "error"
   const [inviteStatuses, setInviteStatuses] = useState<Record<string, "loading" | "success" | "error">>({});
+
+  const handleRemoveMember = async (userId: string) => {
+    setRemovingMemberIds((prev) => ({ ...prev, [userId]: true }));
+    try {
+      await api.post(`/api/workspaces/${workspaceId}/removemember`, { user_id: userId });
+      // The memberStore handles real-time removal through SocketProvider MEMBER_REMOVED
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setRemovingMemberIds((prev) => ({ ...prev, [userId]: false }));
+    }
+  };
 
   const handleInvite = async (email: string) => {
     setInviteStatuses((prev) => ({ ...prev, [email]: "loading" }));
@@ -164,10 +181,15 @@ export function ManageMembersModal({ onClose }: { onClose?: () => void }) {
 
             {/* Current members */}
             {!hasSearched &&
-              members.map((member: workspace_member) => (
+              members.map((member: workspace_member) => {
+                const canRemove =
+                  (currentUserRole === "admin" || currentUserRole === "owner") &&
+                  member.role !== "owner" &&
+                  member.user_id !== currentUserId;
+                return (
                 <div
                   key={member.user_id}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-container-low transition-colors"
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-container-low transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
@@ -181,8 +203,17 @@ export function ManageMembersModal({ onClose }: { onClose?: () => void }) {
                       </p>
                     </div>
                   </div>
+                  {canRemove && (
+                    <button
+                      onClick={() => handleRemoveMember(member.user_id)}
+                      disabled={removingMemberIds[member.user_id]}
+                      className={`text-xs bg-error/10 text-error hover:bg-error hover:text-white px-3 py-1.5 rounded-lg font-bold transition-colors opacity-0 group-hover:opacity-100 ${removingMemberIds[member.user_id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {removingMemberIds[member.user_id] ? 'Removing...' : 'Remove'}
+                    </button>
+                  )}
                 </div>
-              ))}
+              )})}
           </div>
         </div>
       </div>

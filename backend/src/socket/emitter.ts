@@ -85,9 +85,11 @@ export async function emitMemberAdded(workspaceId: string, member: object) {
 }
 
 export async function emitMemberRemoved(workspaceId: string, userId: string) {
-    await broadcastToWorkspace(workspaceId, {
+    const payload = {
         type: "MEMBER_REMOVED",
         category: "sync",
         userId,
-    });
+    };
+    await broadcastToWorkspace(workspaceId, payload);
+    sendToUser(userId, payload);
 }
