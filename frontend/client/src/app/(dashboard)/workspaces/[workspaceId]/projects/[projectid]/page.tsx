@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AddTaskModal } from "@/components/ui/modals/AddTaskModal";
 import { useTaskStore, TaskRow } from "@/stores/taskStore";
+import { FilePanel } from "@/components/ui/FilePanel";
 
 interface TasksApiResponse {
   project_id: string;
@@ -242,6 +243,15 @@ export default function ProjectsIdPage() {
                 </div>
               </div>
               
+              {/* Attachments */}
+              <div className="bg-surface-container-low rounded-xl p-4">
+                <FilePanel
+                  workspaceId={wsId ?? ""}
+                  projectId={projectId}
+                  taskId={expandedTask.id}
+                />
+              </div>
+
               <div className="text-[10px] text-center text-outline-variant uppercase tracking-widest pt-4 border-t border-outline-variant/10">
                  Task ID: {expandedTask.id.substring(0,8)} • Created: {formatDate(String(expandedTask.created_at))}
               </div>

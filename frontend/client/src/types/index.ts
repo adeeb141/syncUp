@@ -56,3 +56,18 @@ export type WebsocketServerMessages={
     category:string,
     payload:any
 }
+
+
+export type FileRecord = {
+  id: string;
+  name: string;
+  url: string;
+  key: string;
+  size: number | null;
+  type: string | null;
+  uploaded_by: string;
+  workspace_id: string;
+  project_id: string | null;
+  task_id: string | null;
+  created_at: string;
+};
