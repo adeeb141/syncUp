@@ -84,11 +84,13 @@ export const uploadFile = async (req: any, res: any) => {
 
 
 // ======================= GET FILES =======================
+// ── Replace your existing getFiles in file.controller.ts ────────────────────
+// Only the query section changes — add offset support
 
 export const getFiles = async (req: any, res: any) => {
   try {
     const user_id = req.user?.id;
-    const { workspace_id, project_id, task_id, limit = 20 } = req.query;
+    const { workspace_id, project_id, task_id, limit = 10, offset = 0 } = req.query;
 
     if (!user_id) return res.status(401).json({ message: "Unauthorized" });
 
@@ -114,8 +116,14 @@ export const getFiles = async (req: any, res: any) => {
       query += ` AND task_id=$${values.length}`;
     }
 
+    query += ` ORDER BY created_at DESC`;
+
+    // ── Pagination ──
     values.push(limit);
-    query += ` ORDER BY created_at DESC LIMIT $${values.length}`;
+    query += ` LIMIT $${values.length}`;
+
+    values.push(offset);
+    query += ` OFFSET $${values.length}`;
 
     const files = await pool.query(query, values);
 
@@ -125,8 +133,6 @@ export const getFiles = async (req: any, res: any) => {
     return res.status(500).json({ message: err.message });
   }
 };
-
-
 // ======================= DELETE FILE =======================
 
 export const deleteFile = async (req: any, res: any) => {

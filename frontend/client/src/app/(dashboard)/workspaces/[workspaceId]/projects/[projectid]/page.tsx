@@ -51,7 +51,6 @@ export default function ProjectsIdPage() {
   const projectId = Array.isArray(projectid) ? projectid[0] : projectid;
   const wsId = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
 
-  // Read from Zustand task store
   const taskList = useTaskStore((s) => s.tasks);
   const tasksLoading = useTaskStore((s) => s.isLoading);
   const { setTasks, setLoading: setTasksLoading } = useTaskStore();
@@ -61,16 +60,14 @@ export default function ProjectsIdPage() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [activeTab, setActiveTab] = useState<"board" | "files">("board");
 
   useEffect(() => {
     if (!projectId) return;
-
     const fetchTasks = async () => {
       setTasksLoading(true);
       try {
-        const data = await api.get<TasksApiResponse>(
-          `/api/workspaces/${projectId}/tasksinfo`
-        );
+        const data = await api.get<TasksApiResponse>(`/api/workspaces/${projectId}/tasksinfo`);
         setTasks(projectId, data.tasks);
         setError(false);
       } catch (e) {
@@ -79,7 +76,6 @@ export default function ProjectsIdPage() {
         setTasksLoading(false);
       }
     };
-
     fetchTasks();
   }, [projectId]);
 
@@ -97,46 +93,71 @@ export default function ProjectsIdPage() {
   const todoTasks = filtered.filter(t => t.status === "todo");
   const inProgressTasks = filtered.filter(t => t.status === "in_progress");
   const doneTasks = filtered.filter(t => t.status === "done");
-
   const expandedTask = taskList.find(t => t.id === expandedId);
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] p-8 max-w-[1600px] mx-auto overflow-hidden">
+
       {/* ── Header ── */}
       <div className="flex items-end justify-between mb-8 shrink-0">
         <div>
           <h1 className="text-3xl font-manrope font-extrabold text-on-surface tracking-tight mb-2">Project Board</h1>
           <p className="text-on-surface-variant font-body">Manage tasks and track project progress.</p>
         </div>
-        <div className="flex gap-3">
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-surface-container-high focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary/30 rounded-lg text-sm text-on-surface w-64 transition-all outline-none border border-transparent focus:border-outline-variant/30"
-            />
-          </div>
+
+        <div className="flex gap-3 items-center">
+
+          {/* ── Board / Files tab switcher ── */}
           <div className="flex items-center bg-surface-container-high rounded-lg p-1">
-            {FILTER_PRIORITIES.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPriorityFilter(p)}
-                className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${priorityFilter === p ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
-              >
-                {p === "all" ? "All" : PRIORITY_META[p].label}
-              </button>
-            ))}
+            <button
+              onClick={() => setActiveTab("board")}
+              className={`px-3 py-1 rounded text-xs font-bold flex items-center gap-1.5 transition-colors ${activeTab === "board" ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              <span className="material-symbols-outlined text-sm">view_kanban</span>
+              Board
+            </button>
+            <button
+              onClick={() => setActiveTab("files")}
+              className={`px-3 py-1 rounded text-xs font-bold flex items-center gap-1.5 transition-colors ${activeTab === "files" ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              <span className="material-symbols-outlined text-sm">attach_file</span>
+              Files
+            </button>
           </div>
-          <button
-            onClick={() => setShowAddTask(true)}
-            className="px-4 py-2 bg-gradient-to-br from-primary to-primary-dim rounded-lg font-manrope font-semibold text-sm text-white flex items-center gap-2 shadow-sm hover:opacity-90"
-          >
-            <span className="material-symbols-outlined text-lg">add</span>
-            Add Task
-          </button>
+
+          {/* ── Board-only controls (hidden on Files tab) ── */}
+          {activeTab === "board" && (
+            <>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-surface-container-high focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary/30 rounded-lg text-sm text-on-surface w-64 transition-all outline-none border border-transparent focus:border-outline-variant/30"
+                />
+              </div>
+              <div className="flex items-center bg-surface-container-high rounded-lg p-1">
+                {FILTER_PRIORITIES.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPriorityFilter(p)}
+                    className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${priorityFilter === p ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+                  >
+                    {p === "all" ? "All" : PRIORITY_META[p].label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="px-4 py-2 bg-gradient-to-br from-primary to-primary-dim rounded-lg font-manrope font-semibold text-sm text-white flex items-center gap-2 shadow-sm hover:opacity-90"
+              >
+                <span className="material-symbols-outlined text-lg">add</span>
+                Add Task
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -146,46 +167,55 @@ export default function ProjectsIdPage() {
         </div>
       )}
 
-      {/* ── Kanban Board ── */}
-      <div className="flex gap-6 overflow-x-auto overflow-y-hidden pb-4 pb-8 min-h-0 flex-1">
+      {/* ── Files Tab ── */}
+      {activeTab === "files" ? (
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-xl">
+            <FilePanel
+              workspaceId={wsId ?? ""}
+              projectId={projectId}
+            />
+          </div>
+        </div>
 
-        <Column
-          title="To Do"
-          tasks={todoTasks}
-          statusKey="todo"
-          onExpand={(id) => setExpandedId(id)}
-        />
+      ) : (
+        /* ── Kanban Board ── */
+        <div className="flex gap-6 overflow-x-auto overflow-y-hidden pb-4 pb-8 min-h-0 flex-1">
+          <Column
+            title="To Do"
+            tasks={todoTasks}
+            statusKey="todo"
+            onExpand={(id) => setExpandedId(id)}
+          />
+          <Column
+            title="In Progress"
+            tasks={inProgressTasks}
+            statusKey="in_progress"
+            onExpand={(id) => setExpandedId(id)}
+          />
+          <Column
+            title="Done"
+            tasks={doneTasks}
+            statusKey="done"
+            onExpand={(id) => setExpandedId(id)}
+          />
+        </div>
+      )}
 
-        <Column
-          title="In Progress"
-          tasks={inProgressTasks}
-          statusKey="in_progress"
-          onExpand={(id) => setExpandedId(id)}
-        />
-
-        <Column
-          title="Done"
-          tasks={doneTasks}
-          statusKey="done"
-          onExpand={(id) => setExpandedId(id)}
-        />
-
-      </div>
-
-      {/* Task Detail Sidebar Panel */}
+      {/* ── Task Detail Sidebar Panel ── */}
       {expandedTask && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-inverse-surface/20 backdrop-blur-[2px] z-40 transition-opacity"
             onClick={() => setExpandedId(null)}
           ></div>
 
-          {/* Panel */}
           <div className="fixed inset-y-0 right-0 w-[450px] bg-surface-container-lowest shadow-[-10px_0_30px_rgba(0,0,0,0.05)] z-50 transform transition-transform duration-300 translate-x-0 border-l border-outline-variant/10 flex flex-col">
             <div className="h-16 flex items-center justify-between px-6 border-b border-outline-variant/10 bg-surface/50 backdrop-blur-sm shrink-0">
               <div className="flex items-center gap-3">
-                <button onClick={() => setExpandedId(null)} className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-1 rounded-full"><span className="material-symbols-outlined">first_page</span></button>
+                <button onClick={() => setExpandedId(null)} className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-1 rounded-full">
+                  <span className="material-symbols-outlined">first_page</span>
+                </button>
                 <span className={`${STATUS_META[expandedTask.status]?.bg || STATUS_META.todo.bg} ${STATUS_META[expandedTask.status]?.text || STATUS_META.todo.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>
                   {STATUS_META[expandedTask.status]?.label || STATUS_META.todo.label}
                 </span>
@@ -197,6 +227,7 @@ export default function ProjectsIdPage() {
                 <button onClick={() => setExpandedId(null)} className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors"><span className="material-symbols-outlined text-sm">close</span></button>
               </div>
             </div>
+
             <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
               {/* Title & Desc */}
               <div>
@@ -225,7 +256,6 @@ export default function ProjectsIdPage() {
                     <span className={`text-sm font-semibold text-on-surface ${isOverdue(expandedTask.due_date) ? "text-error" : ""}`}>{formatDate(expandedTask.due_date)}</span>
                   </div>
                 </div>
-
                 <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 flex flex-col gap-1 hover:border-primary/20 transition-colors cursor-pointer group">
                   <span className="text-[10px] font-bold uppercase text-on-surface-variant group-hover:text-primary transition-colors">Priority</span>
                   <div className="flex items-center gap-2 mt-1">
@@ -234,14 +264,13 @@ export default function ProjectsIdPage() {
                     </span>
                   </div>
                 </div>
-
                 <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 flex flex-col gap-1 hover:border-primary/20 transition-colors cursor-pointer group">
                   <span className="text-[10px] font-bold uppercase text-on-surface-variant group-hover:text-primary transition-colors">Created By</span>
                   <span className="text-sm font-semibold text-on-surface mt-1 truncate">{expandedTask.created_by_name || "—"}</span>
                 </div>
               </div>
-              
-              {/* Attachments */}
+
+              {/* ── Task-level Attachments ── */}
               <div className="bg-surface-container-low rounded-xl p-4">
                 <FilePanel
                   workspaceId={wsId ?? ""}
@@ -278,7 +307,9 @@ function Column({ title, tasks, statusKey, onExpand }: { title: string, tasks: T
           <h3 className="font-headline font-bold text-on-surface text-lg">{title}</h3>
           <span className="bg-surface-container-high text-on-surface-variant text-xs font-bold px-2 py-0.5 rounded-full ml-1">{tasks.length}</span>
         </div>
-        <button className="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container p-1 rounded"><span className="material-symbols-outlined text-sm">add</span></button>
+        <button className="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container p-1 rounded">
+          <span className="material-symbols-outlined text-sm">add</span>
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-4 px-1 min-h-0">
         {tasks.map((task) => {
@@ -292,11 +323,12 @@ function Column({ title, tasks, statusKey, onExpand }: { title: string, tasks: T
             >
               <div className="flex justify-between items-start mb-2">
                 <span className={`${pm.bg} ${pm.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>{pm.label}</span>
-                <button className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity"><span className="material-symbols-outlined text-sm">more_horiz</span></button>
+                <button className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="material-symbols-outlined text-sm">more_horiz</span>
+                </button>
               </div>
               <h4 className="font-headline font-bold text-sm text-on-surface mb-1 group-hover:text-primary transition-colors">{task.title}</h4>
               <p className="text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">{task.description || "No description provided"}</p>
-
               <div className="flex items-center justify-between mt-auto pt-3 border-t border-outline-variant/10">
                 <div className="flex -space-x-1.5">
                   {task.assignee_name && (
@@ -307,7 +339,10 @@ function Column({ title, tasks, statusKey, onExpand }: { title: string, tasks: T
                 </div>
                 <div className={`flex items-center gap-3 text-xs font-medium ${overdue ? 'text-error' : 'text-on-surface-variant'}`}>
                   {task.due_date && (
-                    <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">schedule</span> {formatDate(task.due_date)}</span>
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">schedule</span>
+                      {formatDate(task.due_date)}
+                    </span>
                   )}
                 </div>
               </div>
