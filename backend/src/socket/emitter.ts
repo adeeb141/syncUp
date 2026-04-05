@@ -67,3 +67,29 @@ export async function emitProjectDeleted(workspaceId: string, projectId: string)
         projectId,
     });
 }
+
+export async function emitWorkspaceDeleted(workspaceId: string) {
+    await broadcastToWorkspace(workspaceId, {
+        type: "WORKSPACE_DELETED",
+        category: "sync",
+        workspaceId,
+    });
+}
+
+export async function emitMemberAdded(workspaceId: string, member: object) {
+    await broadcastToWorkspace(workspaceId, {
+        type: "MEMBER_ADDED",
+        category: "sync",
+        member,
+    });
+}
+
+export async function emitMemberRemoved(workspaceId: string, userId: string) {
+    const payload = {
+        type: "MEMBER_REMOVED",
+        category: "sync",
+        userId,
+    };
+    await broadcastToWorkspace(workspaceId, payload);
+    sendToUser(userId, payload);
+}

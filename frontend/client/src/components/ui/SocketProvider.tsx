@@ -2,7 +2,12 @@
 import { useAuthStore } from "@/stores/authStore";
 import { useEffect } from "react";
 import { useNotificationStore } from "@/stores/notificationStore";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useMemberStore } from "@/stores/memberStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useTaskStore } from "@/stores/taskStore";
 import { WebsocketServerMessages } from "@/types";
+
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const userId = useAuthStore((store) => store.user?.id);
     const { pushNotification } = useNotificationStore();
@@ -26,6 +31,71 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                     type: message.type,
                     message: message.payload.message
                 });
+            } else if (message.category === "invite") {
+                const notificationStore = useNotificationStore.getState();
+
+                if (message.type === "PENDING_INVITES") {
+                    notificationStore.setInvites(message.invites);
+                } else if (message.type === "workspace_invite") {
+                    notificationStore.addInvite({
+                        id: message.payload.id,
+                        workspace_id: message.payload.workspace_id,
+                        workspace_name: message.payload.workspace_name,
+                        invited_by_name: message.payload.invited_by_name,
+                        invited_by_email: message.payload.invited_by_email
+                    });
+                    pushNotification({
+                        id: crypto.randomUUID(),
+                        type: "info",
+                        message: "You have a new workspace invitation!"
+                    });
+                }
+            } else if (message.category === "sync") {
+                const taskStore = useTaskStore.getState();
+                const projectStore = useProjectStore.getState();
+                const memberStore = useMemberStore.getState();
+                const workspaceStore = useWorkspaceStore.getState();
+
+                switch (message.type) {
+                    case "TASK_UPDATED":
+                        taskStore.updateTask(message.task.id, message.task);
+                        break;
+                    case "TASK_DELETED":
+                        taskStore.removeTask(message.taskId);
+                        break;
+                    case "TASK_ASSIGNED":
+                        if (taskStore.tasks.some(t => t.id === message.task.id)) {
+                            taskStore.updateTask(message.task.id, message.task);
+                        } else {
+                            taskStore.addTask(message.task);
+                        }
+                        break;
+                    case "PROJECT_ADDED":
+                        console.log("WS message PROJECT_ADDED: ", message);
+                        if (message.project) {
+                            projectStore.addProject(message.project);
+                        } else {
+                            console.error("WS error: PROJECT_ADDED missing project payload", message);
+                        }
+                        break;
+                    case "PROJECT_DELETED":
+                        projectStore.removeProject(message.projectId);
+                        break;
+                    case "WORKSPACE_DELETED":
+                        workspaceStore.setWorkspaces(
+                            workspaceStore.workspaces.filter(w => w.workspace_id !== message.workspaceId)
+                        );
+                        break;
+                    case "MEMBER_ADDED":
+                        memberStore.addMember(message.member);
+                        break;
+                    case "MEMBER_REMOVED":
+                        memberStore.removeMember(message.userId);
+                        if (String(message.userId) === String(userId)) {
+                            window.location.href = "/workspaces";
+                        }
+                        break;
+                }
             }
         };
 

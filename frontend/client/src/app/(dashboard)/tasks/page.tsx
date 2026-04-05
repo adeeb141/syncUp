@@ -64,7 +64,7 @@ export default function MyTasksPage() {
     const fetchMyTasks = async () => {
       setIsLoading(true);
       try {
-        const data = await api.get<{ tasks: MyTask[] }>("/api/workspaces/projects/my-tasks");
+        const data = await api.get<{ tasks: MyTask[] }>("/api/projects/my-tasks");
         setTasks(data.tasks);
         setError(false);
       } catch (e) {

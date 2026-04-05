@@ -16,6 +16,7 @@ export type workspacePageInfo={
     workspace_id:string,
     name:string,
     slug:string,
+    description:string,
     owner_id:string,
     created_at:string,
     role:"owner" |"admin" |"member"
@@ -54,7 +55,8 @@ export type tasks={
 export type WebsocketServerMessages={
     type:string,
     category:string,
-    payload:any
+    payload?:any,
+    [key: string]: any
 }
 
 

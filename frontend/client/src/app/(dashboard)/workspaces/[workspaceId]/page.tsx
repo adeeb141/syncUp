@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { ManageMembersModal } from "@/components/ui/modals/ManageMembersModal";
+import { CreateProjectModal } from "@/components/ui/modals/CreateProjectModal";
 import { useProjectStore } from "@/stores/projectStore";
 import { useMemberStore } from "@/stores/memberStore";
+import { useAuthStore } from "@/stores/authStore";
 
 interface ApiResponse {
   workspaceMembers: workspace_member[];
@@ -37,12 +39,32 @@ export default function WorkspaceIdPage() {
   const membersLoading = useMemberStore((s) => s.isLoading);
   const { setMembers, setLoading: setMembersLoading } = useMemberStore();
 
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const currentUserRole = workspaceMembers.find(m => m.user_id === currentUserId)?.role;
+
   const [error, setError] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
-  const router = useRouter();
 
-  const isLoading = projectsLoading || membersLoading;
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+
+  const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    
+    setDeletingProjectId(projectId);
+    try {
+      await api.delete(`/api/workspaces/projects/${projectId}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete project");
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
+
+  const router = useRouter();
 
   useEffect(() => {
     if (!workspaceIdParam) {
@@ -67,11 +89,10 @@ export default function WorkspaceIdPage() {
 
     fetchWorkspaceInfo();
   }, [workspaceIdParam]);
-
+  const isLoading = projectsLoading || membersLoading;
   if (isLoading) {
     return <LoadingScreen />;
   }
-  
   return (
     <div className="p-10 space-y-10 max-w-7xl mx-auto">
       {/* Header Section */}
@@ -80,8 +101,15 @@ export default function WorkspaceIdPage() {
           <h2 className="font-headline text-3xl font-extrabold text-on-surface tracking-tight">Daily Overview</h2>
           <p className="text-on-surface-variant mt-1 font-medium">Welcome back, your workspace is seeing high activity today.</p>
         </div>
-        <div className="flex gap-2 text-xs font-semibold">
-          <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full flex items-center gap-1">
+        <div className="flex items-center gap-4 text-xs font-semibold">
+          <Link 
+            href={`/workspaces/${workspaceIdParam}/doc/new`}
+            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-sm">post_add</span>
+            Create Document
+          </Link>
+          <span className="bg-secondary-container text-on-secondary-container px-3 py-2 rounded-full flex items-center gap-1">
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
             +12% Productivity
           </span>
@@ -109,14 +137,14 @@ export default function WorkspaceIdPage() {
           </div>
           <div className="mt-8 flex gap-4">
             <div className="flex -space-x-2">
-                 <div className="w-8 h-8 rounded-full border-2 border-surface bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-surface-variant">+{workspaceMembers.length}</div>
+              <div className="w-8 h-8 rounded-full border-2 border-surface bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-surface-variant">+{workspaceMembers.length}</div>
             </div>
             <p className="text-xs text-on-surface-variant self-center font-medium">Active team members</p>
           </div>
           <div className="mt-4">
-             <button onClick={() => setShowMembers(!showMembers)} className="text-sm font-bold text-primary hover:underline transition-all">
-                {showMembers ? "Hide Members" : "Manage Members"}
-             </button>
+            <button onClick={() => setShowMembers(!showMembers)} className="text-sm font-bold text-primary hover:underline transition-all">
+              {showMembers ? "Hide Members" : "Manage Members"}
+            </button>
           </div>
         </div>
 
@@ -137,27 +165,27 @@ export default function WorkspaceIdPage() {
           </div>
         </div>
       </div>
-      
+
       {showMembers && (
         <div className="bg-surface-container-low rounded-xl p-6 transition-all duration-300">
-           <h4 className="font-headline text-lg font-bold text-on-surface mb-4">Workspace Members</h4>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-               {workspaceMembers.map(member => (
-                   <div key={member.user_id} className="bg-surface-container-lowest p-4 rounded-lg flex items-center gap-4">
-                       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">{member.name?.charAt(0).toUpperCase() ?? "U"}</div>
-                       <div>
-                           <p className="text-sm font-bold text-on-surface">{member.name}</p>
-                           <p className="text-xs text-on-surface-variant uppercase">{member.role}</p>
-                       </div>
-                   </div>
-               ))}
-           </div>
-           <button 
-             onClick={() => setShowManageMembersModal(true)}
-             className="mt-4 bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
-           >
-               Invite New Member
-           </button>
+          <h4 className="font-headline text-lg font-bold text-on-surface mb-4">Workspace Members</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {workspaceMembers.map(member => (
+              <div key={member.user_id} className="bg-surface-container-lowest p-4 rounded-lg flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">{member.name?.charAt(0).toUpperCase() ?? "U"}</div>
+                <div>
+                  <p className="text-sm font-bold text-on-surface">{member.name}</p>
+                  <p className="text-xs text-on-surface-variant uppercase">{member.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => setShowManageMembersModal(true)}
+            className="mt-4 bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Invite New Member
+          </button>
         </div>
       )}
 
@@ -167,35 +195,50 @@ export default function WorkspaceIdPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="font-headline text-xl font-bold text-on-surface">Recent Projects</h4>
-            <button className="text-sm text-primary font-bold hover:underline">View All</button>
+            <Link href={`/workspaces/${workspaceIdParam}/projects`} className="text-sm text-primary font-bold hover:underline">View All</Link>
           </div>
-          
+
           {workspaceProjects.length === 0 ? (
-             <div className="border-2 border-dashed border-outline-variant/30 rounded-xl p-8 flex flex-col items-center justify-center text-center">
-               <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant mb-4">
-                 <span className="material-symbols-outlined text-3xl">add</span>
-               </div>
-               <h3 className="font-manrope font-bold text-on-surface mb-1 text-lg">No Active Projects</h3>
-               <p className="text-on-surface-variant text-sm font-body mb-4">You have no projects in this workspace yet.</p>
-               <button className="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm">Create Project</button>
-             </div>
+            <div className="border-2 border-dashed border-outline-variant/30 rounded-xl p-8 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant mb-4">
+                <span className="material-symbols-outlined text-3xl">add</span>
+              </div>
+              <h3 className="font-manrope font-bold text-on-surface mb-1 text-lg">No Active Projects</h3>
+              <p className="text-on-surface-variant text-sm font-body mb-4">You have no projects in this workspace yet.</p>
+              <button
+                onClick={() => setShowCreateProjectModal(true)}
+                className="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity"
+              >
+                Create Project
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {workspaceProjects.map((projectItem, index) => (
-                <div 
-                  key={projectItem.id} 
+              {workspaceProjects.slice(0, 5).map((projectItem, index) => {
+                const canDelete = currentUserRole === "admin" || currentUserRole === "owner" || projectItem.created_by === currentUserId;
+                return (
+                <div
+                  key={projectItem.id}
                   onClick={() => router.push(`/workspaces/${workspaceIdParam}/projects/${projectItem.id}`)}
-                  className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/5 hover:shadow-md transition-shadow group cursor-pointer"
+                  className={`bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/5 hover:shadow-md transition-shadow group relative cursor-pointer ${deletingProjectId === projectItem.id ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${PROJECT_COLORS[index % PROJECT_COLORS.length]}`}>
                       <span className="material-symbols-outlined">{PROJECT_ICONS[index % PROJECT_ICONS.length]}</span>
                     </div>
-                    <span className="bg-surface-container-high px-2 py-1 rounded text-[10px] font-bold uppercase text-on-surface-variant">{projectItem.status}</span>
+                    {canDelete && (
+                      <button
+                        onClick={(e) => handleDeleteProject(e, projectItem.id)}
+                        className="w-8 h-8 flex flex-shrink-0 items-center justify-center bg-error-container/20 text-error rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-error hover:text-white"
+                        title="Delete project"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    )}
+                    <span className="bg-surface-container-high px-2 py-1 rounded text-[10px] font-bold uppercase text-on-surface-variant ml-auto">{projectItem.status}</span>
                   </div>
                   <h5 className="font-headline font-bold text-on-surface group-hover:text-primary transition-colors">{projectItem.name}</h5>
                   <p className="text-on-surface-variant text-xs mt-1 mb-4 line-clamp-2 min-h-[2rem]">{projectItem.description || "No description provided."}</p>
-                  
                   <div className="flex items-center justify-between mt-auto">
                     <div className="w-full bg-surface-container-high h-1 rounded-full overflow-hidden mr-4">
                       <div className="bg-tertiary w-[50%] h-full rounded-full"></div>
@@ -203,7 +246,17 @@ export default function WorkspaceIdPage() {
                     <span className="text-[10px] font-bold text-on-surface-variant">50%</span>
                   </div>
                 </div>
-              ))}
+              )})}
+              {/* Add New Project Card */}
+              <div
+                onClick={() => setShowCreateProjectModal(true)}
+                className="border-2 border-dashed border-outline-variant/30 rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary/40 hover:bg-surface-container-low transition-all group min-h-[180px]"
+              >
+                <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant group-hover:bg-primary group-hover:text-on-primary transition-all mb-2">
+                  <span className="material-symbols-outlined">add</span>
+                </div>
+                <p className="text-sm font-bold text-on-surface-variant group-hover:text-primary transition-colors">New Project</p>
+              </div>
             </div>
           )}
 
@@ -238,7 +291,6 @@ export default function WorkspaceIdPage() {
           <div className="relative bg-surface-container-low rounded-xl p-6">
             <div className="space-y-8 relative">
               <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-outline-variant opacity-20"></div>
-              
               <div className="relative flex gap-4">
                 <div className="z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                   <span className="material-symbols-outlined text-[12px] text-on-primary">upload</span>
@@ -275,13 +327,19 @@ export default function WorkspaceIdPage() {
           </div>
         </div>
       </div>
-      
       <button className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform active:scale-95 group z-50">
         <span className="material-symbols-outlined text-3xl">add</span>
         <span className="absolute right-16 bg-on-surface text-surface text-xs font-bold py-1 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">New Task</span>
       </button>
-
-      {showManageMembersModal && <ManageMembersModal onClose={() => setShowManageMembersModal(false)} />}
+      {showCreateProjectModal && workspaceIdParam && (
+        <CreateProjectModal
+          workspaceId={workspaceIdParam}
+          onClose={() => setShowCreateProjectModal(false)}
+        />
+      )}
+      {showManageMembersModal && (
+        <ManageMembersModal onClose={() => setShowManageMembersModal(false)} />
+      )}
     </div>
   );
 }

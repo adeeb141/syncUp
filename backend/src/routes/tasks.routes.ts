@@ -4,9 +4,9 @@ import { addTaskToProject, updateTask, deleteTask, getUserTasks } from "../contr
 
 const router=Router();
 
-router.post("/:project_id/addtask",requireAuth,addTaskToProject);
-router.patch("/:task_id/update",requireAuth,updateTask);
-router.delete("/:task_id/delete",requireAuth,deleteTask);
+router.post("/:project_id/tasks", requireAuth, addTaskToProject);
+router.patch("/:task_id",requireAuth,updateTask);
+router.delete("/:task_id",requireAuth,deleteTask);
 
 router.get("/my-tasks", requireAuth, getUserTasks);
 

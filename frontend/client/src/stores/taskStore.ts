@@ -5,6 +5,7 @@ export type TaskRow = tasks & {
   assignee_name: string | null;
   created_by_name: string | null;
   updated_at: string;
+  created_at: string;
 };
 
 type TaskStoreType = {
@@ -33,8 +34,19 @@ export const useTaskStore = create<TaskStoreType>((set) => ({
   },
 
   addTask: (task) => {
-    set((state) => ({ tasks: [...state.tasks, task] }));
-  },
+  set((state) => ({
+    tasks: [
+      {
+        ...task,
+        created_at: task.created_at ?? new Date().toISOString(),
+        updated_at: task.updated_at ?? new Date().toISOString(),
+        assignee_name: task.assignee_name ?? null,
+        created_by_name: task.created_by_name ?? null,
+      },
+      ...state.tasks.filter((t) => t.id !== task.id), // avoid duplicates
+    ],
+  }));
+},
 
   updateTask: (taskId, updates) => {
     set((state) => ({
