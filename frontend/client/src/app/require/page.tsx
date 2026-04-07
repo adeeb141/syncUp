@@ -8,7 +8,7 @@ export default function RequirePage() {
         <p className="text-slate-500 mb-8 max-w-2xl leading-relaxed">
           This page integrates the collaborative Tiptap editor powered by Yjs and Hocuspocus. Open this URL in multiple tabs or windows to see real-time cursor awareness and document synchronization over WebSockets.
         </p>
-        <TiptapEditor />
+        <TiptapEditor roomName="test-room" />
       </div>
     </div>
   );

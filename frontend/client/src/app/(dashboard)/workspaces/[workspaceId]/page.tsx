@@ -7,10 +7,12 @@ import Link from "next/link";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { ManageMembersModal } from "@/components/ui/modals/ManageMembersModal";
 import { CreateProjectModal } from "@/components/ui/modals/CreateProjectModal";
+import { CreateDocumentModal } from "@/components/ui/modals/CreateDocumentModal";
 import { useProjectStore } from "@/stores/projectStore";
 import { useMemberStore } from "@/stores/memberStore";
 import { useAuthStore } from "@/stores/authStore";
 import { FilePanel } from "@/components/ui/FilePanel";
+import { DocumentPanel } from "@/components/ui/DocumentPanel";
 
 interface ApiResponse {
   workspaceMembers: workspace_member[];
@@ -47,6 +49,7 @@ export default function WorkspaceIdPage() {
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [showCreateDocModal, setShowCreateDocModal] = useState(false);
 
   const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
@@ -96,13 +99,13 @@ export default function WorkspaceIdPage() {
           <p className="text-on-surface-variant mt-1 font-medium">Welcome back, your workspace is seeing high activity today.</p>
         </div>
         <div className="flex items-center gap-4 text-xs font-semibold">
-          <Link
-            href={`/workspaces/${workspaceIdParam}/doc/new`}
+          <button
+            onClick={() => setShowCreateDocModal(true)}
             className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-sm">post_add</span>
             Create Document
-          </Link>
+          </button>
           <span className="bg-secondary-container text-on-secondary-container px-3 py-2 rounded-full flex items-center gap-1">
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
             +12% Productivity
@@ -322,6 +325,11 @@ export default function WorkspaceIdPage() {
           <div className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10 shadow-sm">
             <FilePanel workspaceId={workspaceIdParam ?? ""} />
           </div>
+
+          {/* ── Workspace-level Documents ── */}
+          <div className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10 shadow-sm">
+            <DocumentPanel workspaceId={workspaceIdParam ?? ""} />
+          </div>
         </div>
       </div>
 
@@ -338,6 +346,12 @@ export default function WorkspaceIdPage() {
       )}
       {showManageMembersModal && (
         <ManageMembersModal onClose={() => setShowManageMembersModal(false)} />
+      )}
+      {showCreateDocModal && workspaceIdParam && (
+        <CreateDocumentModal
+          workspaceId={workspaceIdParam}
+          onClose={() => setShowCreateDocModal(false)}
+        />
       )}
     </div>
   );

@@ -9,6 +9,7 @@ import taskRoutes from "./routes/tasks.routes"
 import fileRoutes from "./routes/fileroutes"
 import utilityRoutes from "./routes/utility.routes";
 import inviteRoutes from  "./routes/workspaceInvite.routes";
+import documentRoutes from "./routes/document.routes";
 const app = express();
 
 app.use(cors({
@@ -28,5 +29,6 @@ app.use("/api/utility",utilityRoutes);
 app.use("/api/invite",inviteRoutes);
 
 app.use("/api/projects",taskRoutes);
+app.use("/api/documents", documentRoutes);
 
 export default app;

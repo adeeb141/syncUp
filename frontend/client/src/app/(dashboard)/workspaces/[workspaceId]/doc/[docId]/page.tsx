@@ -1,0 +1,26 @@
+"use client";
+
+import { useParams, useSearchParams } from "next/navigation";
+import TiptapEditor from "@/components/TiptapEditor";
+
+export default function DocPage() {
+  const { docId } = useParams();
+  const searchParams = useSearchParams();
+
+  const roomName = searchParams.get("room") || "";
+  const docIdStr = Array.isArray(docId) ? docId[0] : docId;
+
+  if (!roomName) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center space-y-3">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant">error</span>
+          <p className="text-on-surface font-bold">Missing room information</p>
+          <p className="text-on-surface-variant text-sm">This document link appears to be invalid.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <TiptapEditor roomName={roomName} documentId={docIdStr} />;
+}

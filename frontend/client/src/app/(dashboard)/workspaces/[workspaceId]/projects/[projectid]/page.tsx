@@ -7,6 +7,7 @@ import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AddTaskModal } from "@/components/ui/modals/AddTaskModal";
 import { useTaskStore, TaskRow } from "@/stores/taskStore";
 import { FilePanel } from "@/components/ui/FilePanel";
+import { DocumentPanel } from "@/components/ui/DocumentPanel";
 
 interface TasksApiResponse {
   project_id: string;
@@ -60,7 +61,7 @@ export default function ProjectsIdPage() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
-  const [activeTab, setActiveTab] = useState<"board" | "files">("board");
+  const [activeTab, setActiveTab] = useState<"board" | "files" | "docs">("board");
 
   useEffect(() => {
     if (!projectId) return;
@@ -123,6 +124,13 @@ export default function ProjectsIdPage() {
               <span className="material-symbols-outlined text-sm">attach_file</span>
               Files
             </button>
+            <button
+              onClick={() => setActiveTab("docs")}
+              className={`px-3 py-1 rounded text-xs font-bold flex items-center gap-1.5 transition-colors ${activeTab === "docs" ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              <span className="material-symbols-outlined text-sm">description</span>
+              Docs
+            </button>
           </div>
 
           {/* ── Board-only controls (hidden on Files tab) ── */}
@@ -172,6 +180,17 @@ export default function ProjectsIdPage() {
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-xl">
             <FilePanel
+              workspaceId={wsId ?? ""}
+              projectId={projectId}
+            />
+          </div>
+        </div>
+
+      ) : activeTab === "docs" ? (
+        /* ── Docs Tab ── */
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-xl">
+            <DocumentPanel
               workspaceId={wsId ?? ""}
               projectId={projectId}
             />
@@ -273,6 +292,15 @@ export default function ProjectsIdPage() {
               {/* ── Task-level Attachments ── */}
               <div className="bg-surface-container-low rounded-xl p-4">
                 <FilePanel
+                  workspaceId={wsId ?? ""}
+                  projectId={projectId}
+                  taskId={expandedTask.id}
+                />
+              </div>
+
+              {/* ── Task-level Documents ── */}
+              <div className="bg-surface-container-low rounded-xl p-4">
+                <DocumentPanel
                   workspaceId={wsId ?? ""}
                   projectId={projectId}
                   taskId={expandedTask.id}
