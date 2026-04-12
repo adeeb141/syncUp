@@ -1,0 +1,180 @@
+Date : 2026-04-07 19:19:06
+Directory : d:\CS\syncUp-clean
+Total : 96 files,  23806 codes, 248 comments, 934 blanks, all 24988 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| JSON               |          7 |     16,780 |          0 |          7 |     16,787 |
+| TypeScript JSX     |         33 |      4,311 |        133 |        422 |      4,866 |
+| TypeScript         |         43 |      2,338 |        103 |        455 |      2,896 |
+| PostCSS            |          1 |        193 |          0 |         20 |        213 |
+| MS SQL             |          1 |         87 |         10 |         10 |        107 |
+| JSON with Comments |          2 |         48 |          0 |          1 |         49 |
+| Markdown           |          2 |         24 |          0 |         14 |         38 |
+| JavaScript         |          2 |         20 |          2 |          5 |         27 |
+| XML                |          5 |          5 |          0 |          0 |          5 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                                | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                                   |         96 |     23,806 |        248 |        934 |     24,988 |
+| . (Files)                                                                                                           |          3 |          8 |          0 |          2 |         10 |
+| backend                                                                                                             |         34 |      6,197 |         92 |        376 |      6,665 |
+| backend (Files)                                                                                                     |          3 |      4,284 |          0 |          2 |      4,286 |
+| backend\src                                                                                                         |         31 |      1,913 |         92 |        374 |      2,379 |
+| backend\src (Files)                                                                                                 |          2 |         53 |          0 |          9 |         62 |
+| backend\src\config                                                                                                  |          3 |        105 |         11 |         13 |        129 |
+| backend\src\controllers                                                                                             |          9 |      1,410 |         73 |        287 |      1,770 |
+| backend\src\middlewares                                                                                             |          2 |         33 |          0 |          4 |         37 |
+| backend\src\routes                                                                                                  |          9 |         76 |          0 |         24 |        100 |
+| backend\src\socket                                                                                                  |          2 |        154 |          2 |         24 |        180 |
+| backend\src\types                                                                                                   |          1 |         14 |          0 |          2 |         16 |
+| backend\src\utils                                                                                                   |          3 |         68 |          6 |         11 |         85 |
+| frontend                                                                                                            |         59 |     17,601 |        156 |        556 |     18,313 |
+| frontend\client                                                                                                     |         59 |     17,601 |        156 |        556 |     18,313 |
+| frontend\client (Files)                                                                                             |          8 |     12,584 |          3 |         26 |     12,613 |
+| frontend\client\public                                                                                              |          5 |          5 |          0 |          0 |          5 |
+| frontend\client\src                                                                                                 |         46 |      5,012 |        153 |        530 |      5,695 |
+| frontend\client\src\app                                                                                             |         20 |      2,426 |         61 |        237 |      2,724 |
+| frontend\client\src\app (Files)                                                                                     |          3 |        223 |          0 |         24 |        247 |
+| frontend\client\src\app\(auth)                                                                                      |          3 |        284 |          6 |         28 |        318 |
+| frontend\client\src\app\(auth) (Files)                                                                              |          1 |         16 |          0 |          1 |         17 |
+| frontend\client\src\app\(auth)\login                                                                                |          1 |        132 |          3 |         13 |        148 |
+| frontend\client\src\app\(auth)\register                                                                             |          1 |        136 |          3 |         14 |        153 |
+| frontend\client\src\app\(dashboard)                                                                                 |         13 |      1,905 |         55 |        183 |      2,143 |
+| frontend\client\src\app\(dashboard) (Files)                                                                         |          1 |        183 |          2 |         13 |        198 |
+| frontend\client\src\app\(dashboard)\projects                                                                        |          1 |        201 |          7 |         19 |        227 |
+| frontend\client\src\app\(dashboard)\tasks                                                                           |          1 |        295 |         12 |         27 |        334 |
+| frontend\client\src\app\(dashboard)\workspaces                                                                      |         10 |      1,226 |         34 |        124 |      1,384 |
+| frontend\client\src\app\(dashboard)\workspaces (Files)                                                              |          1 |        144 |          3 |         14 |        161 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]                                                        |          7 |        817 |         23 |         80 |        920 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId] (Files)                                                |          1 |        322 |         10 |         26 |        358 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\doc                                                    |          2 |         37 |          2 |         10 |         49 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\doc\[docId]                                            |          1 |         21 |          0 |          6 |         27 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\doc\new                                                |          1 |         16 |          2 |          4 |         22 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\members                                                |          1 |          3 |          0 |          0 |          3 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects                                               |          3 |        455 |         11 |         44 |        510 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects (Files)                                       |          1 |        108 |          0 |         11 |        119 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects\[projectid]                                   |          2 |        347 |         11 |         33 |        391 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects\[projectid] (Files)                           |          1 |        344 |         11 |         33 |        388 |
+| frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects\[projectid]\tasks                             |          1 |          3 |          0 |          0 |          3 |
+| frontend\client\src\app\(dashboard)\workspaces\createworkspace                                                      |          1 |        114 |          0 |          6 |        120 |
+| frontend\client\src\app\(dashboard)\workspaces\edit                                                                 |          1 |        151 |          8 |         24 |        183 |
+| frontend\client\src\app\(dashboard)\workspaces\edit\[id]                                                            |          1 |        151 |          8 |         24 |        183 |
+| frontend\client\src\app\require                                                                                     |          1 |         14 |          0 |          2 |         16 |
+| frontend\client\src\components                                                                                      |         14 |      2,078 |         72 |        205 |      2,355 |
+| frontend\client\src\components (Files)                                                                              |          1 |        393 |          9 |         31 |        433 |
+| frontend\client\src\components\ui                                                                                   |         13 |      1,685 |         63 |        174 |      1,922 |
+| frontend\client\src\components\ui (Files)                                                                           |          8 |        904 |         36 |         86 |      1,026 |
+| frontend\client\src\components\ui\modals                                                                            |          5 |        781 |         27 |         88 |        896 |
+| frontend\client\src\lib                                                                                             |          4 |        185 |         20 |         40 |        245 |
+| frontend\client\src\stores                                                                                          |          7 |        251 |          0 |         45 |        296 |
+| frontend\client\src\types                                                                                           |          1 |         72 |          0 |          3 |         75 |
++---------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                                                                            | language           | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| d:\CS\syncUp-clean\README.md                                                                                        | Markdown           |          1 |          0 |          0 |          1 |
+| d:\CS\syncUp-clean\backend\package-lock.json                                                                        | JSON               |      4,225 |          0 |          1 |      4,226 |
+| d:\CS\syncUp-clean\backend\package.json                                                                             | JSON               |         45 |          0 |          1 |         46 |
+| d:\CS\syncUp-clean\backend\src\app.ts                                                                               | TypeScript         |         29 |          0 |          5 |         34 |
+| d:\CS\syncUp-clean\backend\src\config\DB_connect.ts                                                                 | TypeScript         |         10 |          1 |          2 |         13 |
+| d:\CS\syncUp-clean\backend\src\config\s3.ts                                                                         | TypeScript         |          8 |          0 |          1 |          9 |
+| d:\CS\syncUp-clean\backend\src\config\schema.sql                                                                    | MS SQL             |         87 |         10 |         10 |        107 |
+| d:\CS\syncUp-clean\backend\src\controllers\auth.controller.ts                                                       | TypeScript         |         92 |          0 |         17 |        109 |
+| d:\CS\syncUp-clean\backend\src\controllers\document.controller.ts                                                   | TypeScript         |        130 |         10 |         25 |        165 |
+| d:\CS\syncUp-clean\backend\src\controllers\file.controller.ts                                                       | TypeScript         |        169 |         12 |         58 |        239 |
+| d:\CS\syncUp-clean\backend\src\controllers\projects.controller.ts                                                   | TypeScript         |        173 |         11 |         33 |        217 |
+| d:\CS\syncUp-clean\backend\src\controllers\tasks.controller.ts                                                      | TypeScript         |        231 |         18 |         45 |        294 |
+| d:\CS\syncUp-clean\backend\src\controllers\utility.controller.ts                                                    | TypeScript         |         37 |          0 |          5 |         42 |
+| d:\CS\syncUp-clean\backend\src\controllers\workspace.controller.ts                                                  | TypeScript         |        200 |         11 |         39 |        250 |
+| d:\CS\syncUp-clean\backend\src\controllers\workspaceInvite.controller.ts                                            | TypeScript         |        105 |          3 |         21 |        129 |
+| d:\CS\syncUp-clean\backend\src\controllers\workspaceMember.controller.ts                                            | TypeScript         |        273 |          8 |         44 |        325 |
+| d:\CS\syncUp-clean\backend\src\middlewares\requireAuth.ts                                                           | TypeScript         |         26 |          0 |          3 |         29 |
+| d:\CS\syncUp-clean\backend\src\middlewares\upload.ts                                                                | TypeScript         |          7 |          0 |          1 |          8 |
+| d:\CS\syncUp-clean\backend\src\routes\auth.routes.ts                                                                | TypeScript         |          9 |          0 |          3 |         12 |
+| d:\CS\syncUp-clean\backend\src\routes\document.routes.ts                                                            | TypeScript         |          7 |          0 |          4 |         11 |
+| d:\CS\syncUp-clean\backend\src\routes\fileroutes.ts                                                                 | TypeScript         |         10 |          0 |          2 |         12 |
+| d:\CS\syncUp-clean\backend\src\routes\project.routes.ts                                                             | TypeScript         |          9 |          0 |          2 |         11 |
+| d:\CS\syncUp-clean\backend\src\routes\tasks.routes.ts                                                               | TypeScript         |          9 |          0 |          4 |         13 |
+| d:\CS\syncUp-clean\backend\src\routes\utility.routes.ts                                                             | TypeScript         |          6 |          0 |          2 |          8 |
+| d:\CS\syncUp-clean\backend\src\routes\workspace.routes.ts                                                           | TypeScript         |         10 |          0 |          3 |         13 |
+| d:\CS\syncUp-clean\backend\src\routes\workspaceInvite.routes.ts                                                     | TypeScript         |          8 |          0 |          3 |         11 |
+| d:\CS\syncUp-clean\backend\src\routes\workspaceMember.routes.ts                                                     | TypeScript         |          8 |          0 |          1 |          9 |
+| d:\CS\syncUp-clean\backend\src\server.ts                                                                            | TypeScript         |         24 |          0 |          4 |         28 |
+| d:\CS\syncUp-clean\backend\src\socket\emitter.ts                                                                    | TypeScript         |         80 |          2 |         14 |         96 |
+| d:\CS\syncUp-clean\backend\src\socket\index.ts                                                                      | TypeScript         |         74 |          0 |         10 |         84 |
+| d:\CS\syncUp-clean\backend\src\types\express.d.ts                                                                   | TypeScript         |         14 |          0 |          2 |         16 |
+| d:\CS\syncUp-clean\backend\src\utils\fileStorage.ts                                                                 | TypeScript         |         41 |          6 |          8 |         55 |
+| d:\CS\syncUp-clean\backend\src\utils\hash.ts                                                                        | TypeScript         |          7 |          0 |          2 |          9 |
+| d:\CS\syncUp-clean\backend\src\utils\jwt.ts                                                                         | TypeScript         |         20 |          0 |          1 |         21 |
+| d:\CS\syncUp-clean\backend\tsconfig.json                                                                            | JSON with Comments |         14 |          0 |          0 |         14 |
+| d:\CS\syncUp-clean\frontend\client\README.md                                                                        | Markdown           |         23 |          0 |         14 |         37 |
+| d:\CS\syncUp-clean\frontend\client\components.json                                                                  | JSON               |         25 |          0 |          1 |         26 |
+| d:\CS\syncUp-clean\frontend\client\eslint.config.mjs                                                                | JavaScript         |         14 |          2 |          3 |         19 |
+| d:\CS\syncUp-clean\frontend\client\next.config.ts                                                                   | TypeScript         |          4 |          1 |          3 |          8 |
+| d:\CS\syncUp-clean\frontend\client\package-lock.json                                                                | JSON               |     12,437 |          0 |          1 |     12,438 |
+| d:\CS\syncUp-clean\frontend\client\package.json                                                                     | JSON               |         41 |          0 |          1 |         42 |
+| d:\CS\syncUp-clean\frontend\client\postcss.config.mjs                                                               | JavaScript         |          6 |          0 |          2 |          8 |
+| d:\CS\syncUp-clean\frontend\client\public\file.svg                                                                  | XML                |          1 |          0 |          0 |          1 |
+| d:\CS\syncUp-clean\frontend\client\public\globe.svg                                                                 | XML                |          1 |          0 |          0 |          1 |
+| d:\CS\syncUp-clean\frontend\client\public\next.svg                                                                  | XML                |          1 |          0 |          0 |          1 |
+| d:\CS\syncUp-clean\frontend\client\public\vercel.svg                                                                | XML                |          1 |          0 |          0 |          1 |
+| d:\CS\syncUp-clean\frontend\client\public\window.svg                                                                | XML                |          1 |          0 |          0 |          1 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(auth)\layout.tsx                                                        | TypeScript JSX     |         16 |          0 |          1 |         17 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(auth)\login\page.tsx                                                    | TypeScript JSX     |        132 |          3 |         13 |        148 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(auth)\register\page.tsx                                                 | TypeScript JSX     |        136 |          3 |         14 |        153 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\layout.tsx                                                   | TypeScript JSX     |        183 |          2 |         13 |        198 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\projects\page.tsx                                            | TypeScript JSX     |        201 |          7 |         19 |        227 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\tasks\page.tsx                                               | TypeScript JSX     |        295 |         12 |         27 |        334 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\doc\[docId]\page.tsx                | TypeScript JSX     |         21 |          0 |          6 |         27 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\doc\new\page.tsx                    | TypeScript JSX     |         16 |          2 |          4 |         22 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\members\page.tsx                    | TypeScript JSX     |          3 |          0 |          0 |          3 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\page.tsx                            | TypeScript JSX     |        322 |         10 |         26 |        358 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects\[projectid]\page.tsx       | TypeScript JSX     |        344 |         11 |         33 |        388 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects\[projectid]\tasks\page.tsx | TypeScript JSX     |          3 |          0 |          0 |          3 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\[workspaceId]\projects\page.tsx                   | TypeScript JSX     |        108 |          0 |         11 |        119 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\createworkspace\page.tsx                          | TypeScript JSX     |        114 |          0 |          6 |        120 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\edit\[id]\page.tsx                                | TypeScript JSX     |        151 |          8 |         24 |        183 |
+| d:\CS\syncUp-clean\frontend\client\src\app\(dashboard)\workspaces\page.tsx                                          | TypeScript JSX     |        144 |          3 |         14 |        161 |
+| d:\CS\syncUp-clean\frontend\client\src\app\globals.css                                                              | PostCSS            |        193 |          0 |         20 |        213 |
+| d:\CS\syncUp-clean\frontend\client\src\app\layout.tsx                                                               | TypeScript JSX     |         26 |          0 |          2 |         28 |
+| d:\CS\syncUp-clean\frontend\client\src\app\page.tsx                                                                 | TypeScript JSX     |          4 |          0 |          2 |          6 |
+| d:\CS\syncUp-clean\frontend\client\src\app\require\page.tsx                                                         | TypeScript JSX     |         14 |          0 |          2 |         16 |
+| d:\CS\syncUp-clean\frontend\client\src\components\TiptapEditor.tsx                                                  | TypeScript JSX     |        393 |          9 |         31 |        433 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\AuthGate.tsx                                                   | TypeScript JSX     |         23 |          0 |          2 |         25 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\AuthProvider.tsx                                               | TypeScript JSX     |         28 |          0 |          4 |         32 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\DocumentPanel.tsx                                              | TypeScript JSX     |        152 |          8 |         21 |        181 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\FilePanel.tsx                                                  | TypeScript JSX     |        342 |         17 |         31 |        390 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\LoadingScreen.tsx                                              | TypeScript JSX     |         13 |          0 |          1 |         14 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\NotificationToast.tsx                                          | TypeScript JSX     |        215 |         11 |         17 |        243 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\SocketProvider.tsx                                             | TypeScript JSX     |        101 |          0 |         10 |        111 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\WorkspaceProvider.tsx                                          | TypeScript JSX     |         30 |          0 |          0 |         30 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\modals\AddTaskModal.tsx                                        | TypeScript JSX     |        128 |          7 |         23 |        158 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\modals\CreateDocumentModal.tsx                                 | TypeScript JSX     |        339 |         12 |         28 |        379 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\modals\CreateProjectModal.tsx                                  | TypeScript JSX     |        101 |          1 |         12 |        114 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\modals\DeleteTaskModal.tsx                                     | TypeScript JSX     |         20 |          0 |          3 |         23 |
+| d:\CS\syncUp-clean\frontend\client\src\components\ui\modals\ManageMembersModal.tsx                                  | TypeScript JSX     |        193 |          7 |         22 |        222 |
+| d:\CS\syncUp-clean\frontend\client\src\lib\api.ts                                                                   | TypeScript         |         22 |          0 |          4 |         26 |
+| d:\CS\syncUp-clean\frontend\client\src\lib\fileApi.ts                                                               | TypeScript         |        150 |         20 |         34 |        204 |
+| d:\CS\syncUp-clean\frontend\client\src\lib\utils.ts                                                                 | TypeScript         |          5 |          0 |          2 |          7 |
+| d:\CS\syncUp-clean\frontend\client\src\lib\workspaceSlug.ts                                                         | TypeScript         |          8 |          0 |          0 |          8 |
+| d:\CS\syncUp-clean\frontend\client\src\stores\authStore.ts                                                          | TypeScript         |         27 |          0 |          3 |         30 |
+| d:\CS\syncUp-clean\frontend\client\src\stores\fileStore.ts                                                          | TypeScript         |         22 |          0 |          7 |         29 |
+| d:\CS\syncUp-clean\frontend\client\src\stores\memberStore.ts                                                        | TypeScript         |         34 |          0 |          8 |         42 |
+| d:\CS\syncUp-clean\frontend\client\src\stores\notificationStore.ts                                                  | TypeScript         |         44 |          0 |          4 |         48 |
+| d:\CS\syncUp-clean\frontend\client\src\stores\projectStore.ts                                                       | TypeScript         |         47 |          0 |         11 |         58 |
+| d:\CS\syncUp-clean\frontend\client\src\stores\taskStore.ts                                                          | TypeScript         |         59 |          0 |         10 |         69 |
+| d:\CS\syncUp-clean\frontend\client\src\stores\workspaceStore.ts                                                     | TypeScript         |         18 |          0 |          2 |         20 |
+| d:\CS\syncUp-clean\frontend\client\src\types\index.ts                                                               | TypeScript         |         72 |          0 |          3 |         75 |
+| d:\CS\syncUp-clean\frontend\client\tsconfig.json                                                                    | JSON with Comments |         34 |          0 |          1 |         35 |
+| d:\CS\syncUp-clean\package-lock.json                                                                                | JSON               |          6 |          0 |          1 |          7 |
+| d:\CS\syncUp-clean\package.json                                                                                     | JSON               |          1 |          0 |          1 |          2 |
+| Total                                                                                                               |                    |     23,806 |        248 |        934 |     24,988 |
++---------------------------------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+

@@ -70,6 +70,34 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                             taskStore.addTask(message.task);
                         }
                         break;
+                    case "TASK_REVIEW_REQUESTED":
+                        if (taskStore.tasks.some(t => t.id === message.task.id)) {
+                            taskStore.updateTask(message.task.id, message.task);
+                        }
+                        pushNotification({
+                            id: crypto.randomUUID(),
+                            type: "info",
+                            message: `${message.assigneeName ?? "Someone"} has requested review for task: "${message.task.title}"`
+                        });
+                        break;
+                    case "TASK_REVIEW_RESULT":
+                        if (taskStore.tasks.some(t => t.id === message.task.id)) {
+                            taskStore.updateTask(message.task.id, message.task);
+                        }
+                        if (message.action === "approve") {
+                            pushNotification({
+                                id: crypto.randomUUID(),
+                                type: "success",
+                                message: `Your task "${message.task.title}" has been approved!`
+                            });
+                        } else {
+                            pushNotification({
+                                id: crypto.randomUUID(),
+                                type: "warning",
+                                message: `Your task "${message.task.title}" was sent back for revision${message.remarks ? `: ${message.remarks}` : ""}`
+                            });
+                        }
+                        break;
                     case "PROJECT_ADDED":
                         console.log("WS message PROJECT_ADDED: ", message);
                         if (message.project) {

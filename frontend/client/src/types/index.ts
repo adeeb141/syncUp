@@ -43,12 +43,13 @@ export type tasks={
     parent_task_id?:string,
     title:string,
     description:string,
-    status:"todo" | "in_progress" |"done",
+    status:"todo" | "in_progress" | "in_review" |"done",
     priority:"low" | "medium" | "high",
     assignee_id:string,
     created_by:string,
     due_date:string,
     position:number,
+    review_remarks?:string | null,
     created_at:Date
 }
 

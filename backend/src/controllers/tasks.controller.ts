@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { pool } from "../config/DB_connect";
-import { emitTaskAssigned, emitTaskUpdated, emitTaskDeleted } from "../socket/emitter";
+import { emitTaskAssigned, emitTaskUpdated, emitTaskDeleted, emitTaskReviewRequested, emitTaskReviewResult } from "../socket/emitter";
 
 interface CreateTaskBody {
     parent_task_id?: string,
     title: string,
     description: string,
-    status?: "todo" | "in_progress" | "done",
+    status?: "todo" | "in_progress" | "in_review" | "done",
     priority?: "low" | "medium" | "high",
     assignee_id: string,
     due_date: string,
@@ -280,12 +280,181 @@ export const getUserTasks = async (req: Request<{}, {}, {}>, res: Response): Pro
              JOIN workspaces w ON w.id = p.workspace_id
              LEFT JOIN users u_assignee ON u_assignee.id = t.assignee_id
              LEFT JOIN users u_creator ON u_creator.id = t.created_by
-             WHERE t.assignee_id = $1
+             WHERE t.assignee_id = $1 OR t.created_by = $1
              ORDER BY t.due_date ASC NULLS LAST, t.created_at ASC`,
             [user_id]
         );
 
         return res.status(200).json({ tasks: tasks.rows });
+    } catch (error) {
+        const err = error as Error;
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+// ── Request Review (assignee submits for review) ────────────────
+
+export const requestTaskReview = async (
+    req: Request<{ task_id: string }, {}, {}>,
+    res: Response
+): Promise<Response | void> => {
+    try {
+        const { task_id } = req.params;
+        const requester_id = req.user?.id;
+
+        if (!requester_id) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        // check task exists, get context
+        const taskCheck = await pool.query<{
+            workspace_id: string;
+            assignee_id: string;
+            created_by: string;
+            status: string;
+        }>(
+            `SELECT p.workspace_id, t.assignee_id, t.created_by, t.status
+             FROM tasks t
+             JOIN projects p ON p.id = t.project_id
+             WHERE t.id = $1`,
+            [task_id]
+        );
+
+        if (taskCheck.rowCount === 0) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+
+        const { workspace_id, assignee_id, created_by, status } = taskCheck.rows[0];
+
+        // only the assignee can request review
+        if (assignee_id !== requester_id) {
+            return res.status(403).json({ message: "Only the task assignee can request review" });
+        }
+
+        // task must be in todo or in_progress
+        if (status !== "todo" && status !== "in_progress") {
+            return res.status(400).json({ message: "Task must be in todo or in_progress to request review" });
+        }
+
+        // update status to in_review
+        const updated = await pool.query(
+            `UPDATE tasks
+             SET status = 'in_review',
+                 review_remarks = NULL,
+                 updated_at = NOW()
+             WHERE id = $1
+             RETURNING *`,
+            [task_id]
+        );
+
+        const updatedTask = updated.rows[0];
+
+        // get assignee name for the notification
+        const assigneeInfo = await pool.query<{ name: string }>(
+            `SELECT name FROM users WHERE id = $1`,
+            [requester_id]
+        );
+        const assigneeName = assigneeInfo.rows[0]?.name ?? "Someone";
+
+        // broadcast update to workspace
+        await emitTaskUpdated(workspace_id, updatedTask);
+
+        // notify the task creator
+        emitTaskReviewRequested(created_by, updatedTask, assigneeName);
+
+        return res.status(200).json({
+            message: "Task submitted for review",
+            task: updatedTask,
+        });
+    } catch (error) {
+        const err = error as Error;
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+// ── Handle Review (creator approves or rejects) ─────────────────
+
+interface HandleReviewBody {
+    action: "approve" | "reject";
+    remarks?: string;
+}
+
+export const handleTaskReview = async (
+    req: Request<{ task_id: string }, {}, HandleReviewBody>,
+    res: Response
+): Promise<Response | void> => {
+    try {
+        const { task_id } = req.params;
+        const requester_id = req.user?.id;
+        const { action, remarks } = req.body;
+
+        if (!requester_id) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        if (!action || (action !== "approve" && action !== "reject")) {
+            return res.status(400).json({ message: "Action must be 'approve' or 'reject'" });
+        }
+
+        if (action === "reject" && (!remarks || remarks.trim() === "")) {
+            return res.status(400).json({ message: "Remarks are required when rejecting a task" });
+        }
+
+        // check task exists, get context
+        const taskCheck = await pool.query<{
+            workspace_id: string;
+            assignee_id: string;
+            created_by: string;
+            status: string;
+        }>(
+            `SELECT p.workspace_id, t.assignee_id, t.created_by, t.status
+             FROM tasks t
+             JOIN projects p ON p.id = t.project_id
+             WHERE t.id = $1`,
+            [task_id]
+        );
+
+        if (taskCheck.rowCount === 0) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+
+        const { workspace_id, assignee_id, created_by, status } = taskCheck.rows[0];
+
+        // only the task creator can review
+        if (created_by !== requester_id) {
+            return res.status(403).json({ message: "Only the task creator can approve or reject" });
+        }
+
+        // task must be in_review
+        if (status !== "in_review") {
+            return res.status(400).json({ message: "Task is not in review" });
+        }
+
+        const newStatus = action === "approve" ? "done" : "in_progress";
+        const newRemarks = action === "reject" ? remarks!.trim() : null;
+
+        const updated = await pool.query(
+            `UPDATE tasks
+             SET status = $2,
+                 review_remarks = $3,
+                 updated_at = NOW()
+             WHERE id = $1
+             RETURNING *`,
+            [task_id, newStatus, newRemarks]
+        );
+
+        const updatedTask = updated.rows[0];
+
+        // broadcast update to workspace
+        await emitTaskUpdated(workspace_id, updatedTask);
+
+        // notify the assignee of the result
+        emitTaskReviewResult(assignee_id, updatedTask, action, newRemarks ?? undefined);
+
+        return res.status(200).json({
+            message: action === "approve" ? "Task approved" : "Task rejected",
+            task: updatedTask,
+        });
     } catch (error) {
         const err = error as Error;
         return res.status(500).json({ message: err.message });

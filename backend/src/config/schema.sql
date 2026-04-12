@@ -74,12 +74,13 @@ CREATE TABLE tasks (
   parent_task_id UUID REFERENCES tasks(id),  -- for subtasks
   title VARCHAR(500) NOT NULL,
   description TEXT,
-  status VARCHAR(50) DEFAULT 'todo',       -- todo, in_progress, done
+  status VARCHAR(50) DEFAULT 'todo',       -- todo, in_progress, in_review, done
   priority VARCHAR(50) DEFAULT 'medium',   -- low, medium, high, urgent
   assignee_id UUID REFERENCES users(id),
   created_by UUID REFERENCES users(id),
   due_date TIMESTAMP,
-  position FLOAT, 
+  position FLOAT,
+  review_remarks TEXT DEFAULT NULL,         -- rejection feedback from reviewer
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(project_id, title)

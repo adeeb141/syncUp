@@ -52,6 +52,25 @@ export function emitTaskAssigned(assigneeId: string, task: object) {
     });
 }
 
+export function emitTaskReviewRequested(creatorId: string, task: object, assigneeName: string) {
+    sendToUser(creatorId, {
+        type: "TASK_REVIEW_REQUESTED",
+        category: "sync",
+        task,
+        assigneeName,
+    });
+}
+
+export function emitTaskReviewResult(assigneeId: string, task: object, action: "approve" | "reject", remarks?: string) {
+    sendToUser(assigneeId, {
+        type: "TASK_REVIEW_RESULT",
+        category: "sync",
+        task,
+        action,
+        remarks: remarks ?? null,
+    });
+}
+
 export async function emitProjectAdded(workspaceId: string, project: object) {
     await broadcastToWorkspace(workspaceId, {
         type: "PROJECT_ADDED",

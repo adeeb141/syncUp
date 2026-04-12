@@ -42,7 +42,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {  const 
   };
 
   const navItems = [
-    { icon: "dashboard", label: "Dashboard", href: "#",  },
+    { icon: "dashboard", label: "Dashboard", href: "/dashboard",  },
     { icon: "group_work", label: "Workspaces", href: "/workspaces" },
     { icon: "account_tree", label: "Projects", href: "/projects" },
     { icon: "task_alt", label: "My Tasks", href: "/tasks" },
