@@ -18,7 +18,7 @@ interface workspaceMember {
 interface WorkspaceReqBody {
     name: string,
     slug: string,
-    description:string;
+    description: string;
 }
 
 export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, res: Response): Promise<Response | void> => {
@@ -111,7 +111,7 @@ export const deleteWorkspace = async (req: Request<{ workspace_id: string }, {},
 interface UpdateWorkspaceBody {
     newName?: string,
     newSlug?: string,
-    description?:string
+    description?: string
 }
 
 export const updateWorkspace = async (req: Request<{ workspace_id: string }, {}, UpdateWorkspaceBody>, res: Response):
@@ -203,7 +203,7 @@ export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response)
 
     } catch (e) {
         const err = e as Error;
-        
+
         res.status(500).json({ message: err.message });
     }
 }
@@ -215,28 +215,31 @@ export const getWorkspaceProjectsAndMembers = async (req: Request<{ workspace_id
         const workspace_id = req.params.workspace_id;
 
         //check if workspace exist and return the workspace's info
-        const check=await pool.query(`
-            SELECT FROM workspaces WHERE id=$1`,
+        const check = await pool.query(`
+            SELECT * FROM workspaces WHERE id=$1`,
             [workspace_id]);
-        if(check.rowCount===0){
+        if (check.rowCount === 0) {
             return res.status(404).json({ message: "Workspace doesnt exist" });
         }
-        const [checkAndReturnMembers,checkAndReturnProjects]=await Promise.all([
+        const [checkAndReturnMembers, checkAndReturnProjects] = await Promise.all([
             pool.query(
-            `SELECT wm.user_id, wm.role, u.name
-             FROM workspace_members wm
-             LEFT JOIN users u
-             ON wm.user_id = u.id
-             WHERE wm.workspace_id = $1;`,
-            [workspace_id]),
+                `SELECT 
+    wm.user_id,
+    wm.role,
+    u.name
+ FROM workspace_members wm
+ LEFT JOIN users u
+ ON wm.user_id = u.id
+ WHERE wm.workspace_id = $1;`,
+                [workspace_id]),
             pool.query(
-            ` SELECT id,name,description,status,created_by,created_at
+                ` SELECT id,name,description,status,created_by,created_at
               FROM projects
               WHERE workspace_id = $1`,
-             [workspace_id])
-            ])
-        const workspaceMembers=checkAndReturnMembers.rows;
-        const workspaceProjects=checkAndReturnProjects.rows;
+                [workspace_id])
+        ])
+        const workspaceMembers = checkAndReturnMembers.rows;
+        const workspaceProjects = checkAndReturnProjects.rows;
 
         res.status(200).json({
             workspaceMembers,

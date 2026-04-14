@@ -9,6 +9,7 @@ interface CreateTaskBody {
     status?: "todo" | "in_progress" | "in_review" | "done",
     priority?: "low" | "medium" | "high",
     assignee_id: string,
+    assignee_ids: string[],
     due_date: string,
     position: number
 }
@@ -22,7 +23,8 @@ export const addTaskToProject = async (req: Request<{ project_id: string }, {}, 
         const parent_task_id = req.body.parent_task_id ?? null;
         const status = req.body.status ?? "todo";
         const priority = req.body.priority ?? "medium";
-        const assignee_id = req.body.assignee_id ?? creator_id; // 🔥 default = creator
+        const assignee_id = req.body.assignee_id ?? null;
+        const assignee_ids = req.body.assignee_ids ?? []; // 🔥 default = creator
         const due_date = req.body.due_date ?? null;
         const position = req.body.position ?? 0;
 
@@ -43,27 +45,32 @@ export const addTaskToProject = async (req: Request<{ project_id: string }, {}, 
    LIMIT 1`,
             [project_id, creator_id]
         );
-
-
         if (checkProjectandWorkspace.rowCount === 0) {
-            return res.status(404).json({ message: "Project not found" })
+            return res.status(404).json({ message: "Project not found" });
         }
+
         if (checkProjectandWorkspace.rows[0].role === null) {
-            return res.status(403).json({ message: "creator doesnt exist in workspace" })
+            return res.status(403).json({ message: "creator doesnt exist in workspace" });
         }
+
         const workspace_id = checkProjectandWorkspace.rows[0].workspace_id;
 
+
+
         //check assignee part of workspace?
-        const checkAssignee = await pool.query(
-            `SELECT 1 FROM workspace_members
-             WHERE workspace_id=$1 AND user_id=$2`,
-            [workspace_id, assignee_id]
-        )
-        if (checkAssignee.rowCount === 0) {
-            return res.status(400).json({
-                message: "Assignee is not part of workspace"
-            })
-        }
+        for (const userId of assignee_ids) {
+  const check = await pool.query(
+    `SELECT 1 FROM workspace_members
+     WHERE workspace_id=$1 AND user_id=$2`,
+    [workspace_id, userId]
+  );
+
+  if (check.rowCount === 0) {
+    return res.status(400).json({
+      message: "One of the assignees is not part of workspace"
+    });
+  }
+}
         //check if parent task is in same project
         if (parent_task_id) {
             const checkParentTask = await pool.query(
@@ -77,15 +84,55 @@ export const addTaskToProject = async (req: Request<{ project_id: string }, {}, 
 
         //add task to project
         const newTask = await pool.query(
-            `INSERT INTO tasks(project_id,parent_task_id,title,description,status,priority,assignee_id,created_by,due_date,position)
+            `INSERT INTO tasks(project_id,
+  parent_task_id,
+  title,
+  description,
+  status,
+  priority,
+  assignee_id,  -- KEEP THIS
+  created_by,
+  due_date,
+  position)
                      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
             [project_id, parent_task_id, title, description, status, priority, assignee_id, creator_id, due_date, position]
         );
+        const task = newTask.rows[0]; // ✅ ADD THIS
+
+// ✅ ADD THIS BLOCK HERE
+if (assignee_ids.length > 0) {
+  for (const userId of assignee_ids) {
+    await pool.query(
+      `INSERT INTO task_assignees (task_id, user_id)
+       VALUES ($1, $2)`,
+      [task.id, userId]
+    );
+  }
+}
 
         // notify the assignee
-        emitTaskAssigned(assignee_id, newTask.rows[0]);
+        // notify all assignees
+if (assignee_ids.length > 0) {
+  for (const userId of assignee_ids) {
+    emitTaskAssigned(userId, task);
+  }
+} else if (assignee_id) {
+  // fallback (old system)
+  emitTaskAssigned(assignee_id, task);
+}
 
-        return res.status(201).json(newTask.rows[0]);
+        const fullTask = await pool.query(`
+  SELECT 
+    t.*,
+    STRING_AGG(u.name, ',') AS assignee_name
+  FROM tasks t
+  LEFT JOIN task_assignees ta ON ta.task_id = t.id
+  LEFT JOIN users u ON u.id = ta.user_id
+  WHERE t.id = $1
+  GROUP BY t.id
+`, [task.id]);
+
+return res.status(201).json(fullTask.rows[0]);
 
     } catch (error) {
         const err = error as any;
@@ -269,19 +316,29 @@ export const getUserTasks = async (req: Request<{}, {}, {}>, res: Response): Pro
 
         const tasks = await pool.query(
             `SELECT 
-                t.*, 
-                p.name as project_name,
-                p.workspace_id,
-                w.name as workspace_name,
-                u_assignee.name as assignee_name,
-                u_creator.name as created_by_name
-             FROM tasks t
-             JOIN projects p ON p.id = t.project_id
-             JOIN workspaces w ON w.id = p.workspace_id
-             LEFT JOIN users u_assignee ON u_assignee.id = t.assignee_id
-             LEFT JOIN users u_creator ON u_creator.id = t.created_by
-             WHERE t.assignee_id = $1 OR t.created_by = $1
-             ORDER BY t.due_date ASC NULLS LAST, t.created_at ASC`,
+    t.*, 
+    p.name as project_name,
+    p.workspace_id,
+    w.name as workspace_name,
+
+    STRING_AGG(DISTINCT u.name, ',') AS assignee_name,
+
+    u_creator.name as created_by_name
+
+FROM tasks t
+JOIN projects p ON p.id = t.project_id
+JOIN workspaces w ON w.id = p.workspace_id
+
+LEFT JOIN task_assignees ta ON ta.task_id = t.id
+LEFT JOIN users u ON u.id = ta.user_id
+
+LEFT JOIN users u_creator ON u_creator.id = t.created_by
+
+WHERE t.assignee_id = $1 OR t.created_by = $1
+
+GROUP BY t.id, p.name, p.workspace_id, w.name, u_creator.name
+
+ORDER BY t.due_date ASC NULLS LAST, t.created_at ASC;`,
             [user_id]
         );
 

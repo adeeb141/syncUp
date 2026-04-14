@@ -104,15 +104,17 @@ export default function WorkspacesPage() {
                 <button className="flex-1 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-xs font-bold text-on-surface" onClick={(e) => { e.stopPropagation(); redirectToWorkspace(ws.workspace_id); }}>
                   Enter Workspace
                 </button>
-                <button
-  className="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface-variant"
-  onClick={(e) => {
-    e.stopPropagation();
-    router.push(`/workspaces/edit/${ws.workspace_id}`);
-  }}
->
-  <span className="material-symbols-outlined text-sm">edit</span>
-</button>
+                {(ws.role === "owner" || ws.role === "admin") && (
+                  <button
+                    className="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface-variant"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/workspaces/edit/${ws.workspace_id}`);
+                    }}
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}

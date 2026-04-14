@@ -8,6 +8,8 @@ import { AddTaskModal } from "@/components/ui/modals/AddTaskModal";
 import { useTaskStore, TaskRow } from "@/stores/taskStore";
 import { FilePanel } from "@/components/ui/FilePanel";
 import { DocumentPanel } from "@/components/ui/DocumentPanel";
+import { useAuthStore } from "@/stores/authStore";
+import { useMemberStore } from "@/stores/memberStore";
 
 interface TasksApiResponse {
   project_id: string;
@@ -48,6 +50,7 @@ const FILTER_PRIORITIES = ["all", "high", "medium", "low"] as const;
 type PriorityFilter = (typeof FILTER_PRIORITIES)[number];
 
 export default function ProjectsIdPage() {
+   const { removeTask } = useTaskStore();
   const { workspaceId, projectid } = useParams();
   const projectId = Array.isArray(projectid) ? projectid[0] : projectid;
   const wsId = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
@@ -62,7 +65,28 @@ export default function ProjectsIdPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
   const [activeTab, setActiveTab] = useState<"board" | "files" | "docs">("board");
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const workspaceMembers = useMemberStore((s) => s.members);
 
+  const currentUserRole = workspaceMembers.find(
+    (m) => m.user_id === currentUserId
+  )?.role;
+
+  const handleDeleteTask = async (e: React.MouseEvent, taskId: string) => {
+    e.stopPropagation();
+
+    if (!confirm("Delete this task?")) return;
+
+    try {
+      await api.delete(`/api/projects/${taskId}`);
+
+      // update UI
+      removeTask(taskId);
+    } catch (err: any) {
+      console.error("DELETE ERROR:", err.message);
+      alert(err.message);
+    }
+  };
   useEffect(() => {
     if (!projectId) return;
     const fetchTasks = async () => {
@@ -205,18 +229,27 @@ export default function ProjectsIdPage() {
             tasks={todoTasks}
             statusKey="todo"
             onExpand={(id) => setExpandedId(id)}
+            currentUserRole={currentUserRole}
+            currentUserId={currentUserId}
+            onDelete={handleDeleteTask}
           />
           <Column
             title="In Progress"
             tasks={inProgressTasks}
             statusKey="in_progress"
             onExpand={(id) => setExpandedId(id)}
+            currentUserRole={currentUserRole}
+            currentUserId={currentUserId}
+            onDelete={handleDeleteTask}
           />
           <Column
             title="Done"
             tasks={doneTasks}
             statusKey="done"
             onExpand={(id) => setExpandedId(id)}
+            currentUserRole={currentUserRole}
+            currentUserId={currentUserId}
+            onDelete={handleDeleteTask}
           />
         </div>
       )}
@@ -315,17 +348,32 @@ export default function ProjectsIdPage() {
         </>
       )}
 
-      {showAddTask && projectId && (
-        <AddTaskModal
-          projectId={projectId}
-          onClose={() => setShowAddTask(false)}
-        />
-      )}
+      {showAddTask && projectId && wsId && (
+  <AddTaskModal
+    projectId={projectId}
+    workspaceId={wsId}   
+    onClose={() => setShowAddTask(false)}
+  />
+)}
     </div>
   );
 }
 
-function Column({ title, tasks, statusKey, onExpand }: { title: string, tasks: TaskRow[], statusKey: string, onExpand: (id: string) => void }) {
+function Column({ title,
+  tasks,
+  statusKey,
+  onExpand,
+  currentUserRole,
+  currentUserId,
+  onDelete, }: {
+    title: string;
+    tasks: TaskRow[];
+    statusKey: string;
+    onExpand: (id: string) => void;
+    currentUserRole?: string;
+    currentUserId?: string;
+    onDelete: (e: React.MouseEvent, id: string) => void;
+  }) {
   const meta = STATUS_META[statusKey] || STATUS_META.todo;
   return (
     <div className="w-[340px] flex-shrink-0 flex flex-col bg-surface-container-lowest/30 rounded-2xl p-2">
@@ -350,10 +398,26 @@ function Column({ title, tasks, statusKey, onExpand }: { title: string, tasks: T
               className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-md hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing group relative"
             >
               <div className="flex justify-between items-start mb-2">
-                <span className={`${pm.bg} ${pm.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>{pm.label}</span>
-                <button className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="material-symbols-outlined text-sm">more_horiz</span>
-                </button>
+                <span className={`${pm.bg} ${pm.text} text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider`}>
+                  {pm.label}
+                </span>
+
+                {/* ✅ PERMISSION LOGIC */}
+                {(
+                  currentUserRole === "owner" ||
+                  currentUserRole === "admin" ||
+                  task.created_by === currentUserId
+                ) && (
+                    <button
+                      onClick={(e) => onDelete(e, task.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-error"
+                      title="Delete task"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        delete
+                      </span>
+                    </button>
+                  )}
               </div>
               <h4 className="font-headline font-bold text-sm text-on-surface mb-1 group-hover:text-primary transition-colors">{task.title}</h4>
               <p className="text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">{task.description || "No description provided"}</p>

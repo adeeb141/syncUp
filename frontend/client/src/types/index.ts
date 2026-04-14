@@ -35,7 +35,7 @@ export type workspace_member={
     user_id:string,
     role:"admin" | "owner" | "member",
     joined_at:Date,
-    name?:string
+    name?:string,
 }
 export type tasks={
     id:string,

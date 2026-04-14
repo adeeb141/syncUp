@@ -1,5 +1,6 @@
 import { workspace_member } from "@/types";
 import { create } from "zustand";
+import { api } from "@/lib/api";
 
 type MemberStoreType = {
   members: workspace_member[];
@@ -10,6 +11,7 @@ type MemberStoreType = {
   addMember: (member: workspace_member) => void;
   removeMember: (userId: string) => void;
   setLoading: (value: boolean) => void;
+  fetchMembers: (workspaceId: string) => Promise<void>;
 };
 
 export const useMemberStore = create<MemberStoreType>((set) => ({
@@ -38,4 +40,25 @@ export const useMemberStore = create<MemberStoreType>((set) => ({
   setLoading: (value) => {
     set({ isLoading: value });
   },
+  fetchMembers: async (workspaceId) => {
+  try {
+    set({ isLoading: true });
+
+    const res = await api.get<{ members: workspace_member[] }>(
+  `/api/workspaces/${workspaceId}/members`
+);
+
+    console.log("API MEMBERS:", res);
+
+    set({
+      members: res.members || res,
+      currentWorkspaceId: workspaceId,
+      isLoading: false,
+    });
+  } catch (err) {
+    console.error("FETCH MEMBERS ERROR:", err);
+    set({ isLoading: false });
+  }
+},
+  
 }));

@@ -157,26 +157,40 @@ export const getProjectTasks = async (
         // 4. Fetch all tasks for the project
         const tasks = await pool.query(
             `SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.priority,
-                t.due_date,
-                t.position,
-                t.parent_task_id,
-                t.created_at,
-                t.updated_at,
-                t.assignee_id,
-                u_assignee.name  AS assignee_name,
-                t.created_by,
-                u_creator.name   AS created_by_name
-             FROM tasks t
-             LEFT JOIN users u_assignee ON u_assignee.id = t.assignee_id
-             LEFT JOIN users u_creator  ON u_creator.id  = t.created_by
-             WHERE t.project_id = $1
-             ORDER BY t.position ASC NULLS LAST, t.created_at ASC`,
-            [project_id]
+    t.id,
+    t.title,
+    t.description,
+    t.status,
+    t.priority,
+    t.due_date,
+    t.position,
+    t.parent_task_id,
+    t.created_at,
+    t.updated_at,
+    t.created_by,
+
+    STRING_AGG(DISTINCT u.name, ',') AS assignee_name,
+    u_creator.name AS created_by_name
+
+FROM tasks t
+
+LEFT JOIN task_assignees ta ON ta.task_id = t.id
+LEFT JOIN users u ON u.id = ta.user_id
+LEFT JOIN users u_creator ON u_creator.id = t.created_by
+
+WHERE t.project_id = $1
+AND (
+  t.created_by = $2
+  OR EXISTS (
+    SELECT 1 FROM task_assignees ta2
+    WHERE ta2.task_id = t.id
+    AND ta2.user_id = $2
+  )
+)
+
+GROUP BY t.id, u_creator.name
+ORDER BY t.position ASC NULLS LAST, t.created_at ASC;`,
+            [project_id,requester_id]
         );
 
         return res.status(200).json({

@@ -71,7 +71,14 @@ export default function MyTasksPage() {
   const [rejectingTaskId, setRejectingTaskId] = useState<string | null>(null);
   const [rejectRemarks, setRejectRemarks] = useState("");
   const [rejectError, setRejectError] = useState("");
+  const [showAssignPanel, setShowAssignPanel] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
 
+  const expandedTask = tasks.find((t) => t.id === expandedId);
+  const names = expandedTask?.assignee_name
+    ? expandedTask.assignee_name.split(",").map(n => n.trim())
+    : [];
   useEffect(() => {
     const fetchMyTasks = async () => {
       setIsLoading(true);
@@ -90,6 +97,43 @@ export default function MyTasksPage() {
 
     fetchMyTasks();
   }, []);
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        if (!expandedTask?.workspace_id) return;
+
+        const res = await api.get<{ members: { id: string; name: string }[] }>(
+  `/api/workspaces/${expandedTask.workspace_id}/members`
+);
+      } catch (e) {
+        console.error("Failed to fetch members", e);
+      }
+    };
+
+    fetchMembers();
+  }, [expandedTask]);
+  useEffect(() => {
+    const handleClickOutside = (e: any) => {
+      if (!e.target.closest(".assign-panel") &&
+        !e.target.closest(".assign-btn")) {
+        setShowAssignPanel(false);
+      }
+    };
+
+    if (showAssignPanel) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showAssignPanel]);
+
+
+
+
+
 
   // ── Review Actions ──────────────────────────────────────────────
   const handleRequestReview = async (taskId: string) => {
@@ -146,6 +190,32 @@ export default function MyTasksPage() {
       setActionLoadingId(null);
     }
   };
+  const handleAssignUsers = async () => {
+    try {
+      if (!expandedTask) return;
+
+      const response = await api.patch<{ task: MyTask }>(
+        `/api/tasks/${expandedTask.id}/assign-members`,
+        {
+          user_ids: selectedUsers,
+        }
+      );
+
+      const updatedTask = response.task;
+
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === expandedTask.id ? { ...t, ...updatedTask } : t
+        )
+      );
+
+      setShowAssignPanel(false);
+      setSelectedUsers([]);
+
+    } catch (e) {
+      console.error("Assign failed", e);
+    }
+  };
 
   if (isLoading) return <LoadingScreen />;
 
@@ -174,7 +244,6 @@ export default function MyTasksPage() {
     (t) => t.status !== "done" && isOverdue(t.due_date)
   ).length;
 
-  const expandedTask = tasks.find((t) => t.id === expandedId);
 
   return (
     <div className="pb-12 px-10 max-w-7xl mx-auto pt-8">
@@ -194,11 +263,10 @@ export default function MyTasksPage() {
       <div className="flex items-center gap-1 bg-surface-container-high rounded-xl p-1 w-fit mb-8">
         <button
           onClick={() => setTab("assigned")}
-          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
-            tab === "assigned"
-              ? "bg-surface-container-lowest text-primary shadow-sm"
-              : "text-on-surface-variant hover:text-on-surface"
-          }`}
+          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${tab === "assigned"
+            ? "bg-surface-container-lowest text-primary shadow-sm"
+            : "text-on-surface-variant hover:text-on-surface"
+            }`}
         >
           <span className="flex items-center gap-2">
             <span className="material-symbols-outlined text-lg">person</span>
@@ -207,11 +275,10 @@ export default function MyTasksPage() {
         </button>
         <button
           onClick={() => setTab("created")}
-          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
-            tab === "created"
-              ? "bg-surface-container-lowest text-primary shadow-sm"
-              : "text-on-surface-variant hover:text-on-surface"
-          }`}
+          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${tab === "created"
+            ? "bg-surface-container-lowest text-primary shadow-sm"
+            : "text-on-surface-variant hover:text-on-surface"
+            }`}
         >
           <span className="flex items-center gap-2">
             <span className="material-symbols-outlined text-lg">edit_note</span>
@@ -286,11 +353,10 @@ export default function MyTasksPage() {
             <button
               key={p}
               onClick={() => setPriorityFilter(p)}
-              className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${
-                priorityFilter === p
-                  ? "bg-surface-container-lowest text-primary shadow-sm"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
+              className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${priorityFilter === p
+                ? "bg-surface-container-lowest text-primary shadow-sm"
+                : "text-on-surface-variant hover:text-on-surface"
+                }`}
             >
               {p === "all" ? "All" : PRIORITY_META[p].label}
             </button>
@@ -380,8 +446,8 @@ export default function MyTasksPage() {
             {search || priorityFilter !== "all"
               ? "Try adjusting your filters or search query."
               : tab === "assigned"
-              ? "No tasks have been assigned to you yet."
-              : "You haven't created any tasks yet."}
+                ? "No tasks have been assigned to you yet."
+                : "You haven't created any tasks yet."}
           </p>
         </div>
       ) : (
@@ -401,13 +467,12 @@ export default function MyTasksPage() {
               <div
                 key={task.id}
                 onClick={() => setExpandedId(task.id)}
-                className={`bg-surface-container-lowest rounded-xl p-5 border shadow-sm hover:shadow-md transition-all group cursor-pointer ${
-                  canReview
-                    ? "border-amber-400/50 ring-1 ring-amber-400/20 shadow-amber-100/30"
-                    : wasRejected
+                className={`bg-surface-container-lowest rounded-xl p-5 border shadow-sm hover:shadow-md transition-all group cursor-pointer ${canReview
+                  ? "border-amber-400/50 ring-1 ring-amber-400/20 shadow-amber-100/30"
+                  : wasRejected
                     ? "border-error/30 ring-1 ring-error/10"
                     : "border-outline-variant/10 hover:border-outline-variant/30"
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-4">
                   {/* Status indicator */}
@@ -603,15 +668,86 @@ export default function MyTasksPage() {
 
               {/* Task Properties Grid */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 flex flex-col gap-1 hover:border-primary/20 transition-colors group">
-                  <span className="text-[10px] font-bold uppercase text-on-surface-variant group-hover:text-primary transition-colors">Assignee</span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-[10px] font-bold border-2 border-surface-container-lowest">
-                      {expandedTask.assignee_name?.charAt(0).toUpperCase() || "U"}
+                <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 flex flex-col gap-1 hover:border-primary/20 transition-colors group col-span-2 relative">
+                  <span className="text-[10px] font-bold uppercase text-on-surface-variant group-hover:text-primary transition-colors">
+                    Assignees
+                  </span>
+
+                  <div className="flex items-center justify-between mt-2">
+
+                    {/* LEFT: ASSIGNEES */}
+                    <div className="flex items-center gap-2 flex-wrap max-w-[85%] overflow-hidden">
+
+                      {names.length > 0 ? (
+                        names.map((name, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-1 bg-surface-container-high px-2 py-1 rounded-lg text-xs"
+                          >
+                            <div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">
+                              {name.charAt(0).toUpperCase()}
+                            </div>
+                            <span>{name}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-500">Unassigned</span>
+                      )}
+
                     </div>
-                    <span className="text-sm font-semibold text-on-surface">{expandedTask.assignee_name || "Unassigned"}</span>
+
+                    {/* RIGHT: + BUTTON */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAssignPanel((prev) => !prev);
+                      }}
+                      className="assign-btn shrink-0 ml-2 w-7 h-7 min-w-[28px] min-h-[28px] rounded-full border flex items-center justify-center text-sm font-bold hover:bg-primary hover:text-white transition bg-white"
+                    >
+                      +
+                    </button>
+
                   </div>
+                  {/* ASSIGN PANEL */}
+                  {showAssignPanel && (
+                    <div className="assign-panel absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-50">
+
+                      <h4 className="text-sm font-bold mb-2">Assign Members</h4>
+
+                      <div className="max-h-40 overflow-y-auto">
+                        {members.map((m) => (
+                          <div
+                            key={m.id}
+                            onClick={() => {
+                              setSelectedUsers((prev) =>
+                                prev.includes(m.id)
+                                  ? prev.filter((id) => id !== m.id)
+                                  : [...prev, m.id]
+                              );
+                            }}
+                            className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedUsers.includes(m.id)}
+                              readOnly
+                            />
+                            <span>{m.name}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={handleAssignUsers}
+                        className="mt-3 w-full bg-primary text-white py-1 rounded"
+                      >
+                        Assign
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+
                 <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3 flex flex-col gap-1 hover:border-primary/20 transition-colors group">
                   <span className="text-[10px] font-bold uppercase text-on-surface-variant group-hover:text-primary transition-colors">Due Date</span>
                   <div className="flex items-center gap-2 mt-1">
