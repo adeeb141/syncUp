@@ -7,6 +7,7 @@ interface Workspace {
     name: string;
     slug: string;
     owner_id: string;
+    description: string | null;
     created_at: Date;
 }
 interface workspaceMember {
@@ -54,7 +55,7 @@ export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, re
 
         await client.query("COMMIT");
 
-        const resWorkspace = { ...workspace.rows[0], role: "owner" }
+        const resWorkspace = { ...workspace.rows[0], workspace_id: workspace.rows[0].id, role: "owner" }
         res.status(201).json({
             message: "Workspace Created",
             workspace: resWorkspace
