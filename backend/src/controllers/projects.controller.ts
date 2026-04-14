@@ -214,11 +214,46 @@ export const getUserProjects = async (req: Request<{}, {}, {}>, res: Response): 
         }
 
         const projects = await pool.query(
-            `SELECT p.*, w.name as workspace_name
+            `SELECT
+                p.*,
+                w.name AS workspace_name,
+                (
+                    SELECT COUNT(*)::int
+                    FROM workspace_members wm_count
+                    WHERE wm_count.workspace_id = p.workspace_id
+                ) AS member_count,
+                (
+                    SELECT COUNT(*)::int
+                    FROM tasks t_count
+                    WHERE t_count.project_id = p.id
+                ) AS task_count
              FROM projects p
-             JOIN workspace_members wm ON wm.workspace_id = p.workspace_id
              JOIN workspaces w ON w.id = p.workspace_id
-             WHERE wm.user_id = $1
+             JOIN workspace_members wm ON wm.workspace_id = p.workspace_id AND wm.user_id = $1
+             WHERE EXISTS (
+                SELECT 1
+                FROM tasks t
+                WHERE t.project_id = p.id
+                  AND (
+                    t.created_by = $1
+                    OR (
+                        EXISTS (
+                            SELECT 1
+                            FROM task_assignees ta_user
+                            WHERE ta_user.task_id = t.id
+                              AND ta_user.user_id = $1
+                        )
+                    )
+                    OR (
+                        NOT EXISTS (
+                            SELECT 1
+                            FROM task_assignees ta_any
+                            WHERE ta_any.task_id = t.id
+                        )
+                        AND t.assignee_id = $1
+                    )
+                  )
+             )
              ORDER BY p.created_at DESC`,
             [user_id]
         );

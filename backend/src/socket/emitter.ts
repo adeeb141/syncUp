@@ -115,8 +115,35 @@ export async function emitMemberRemoved(workspaceId: string, userId: string) {
     const payload = {
         type: "MEMBER_REMOVED",
         category: "sync",
+        workspaceId,
         userId,
     };
     await broadcastToWorkspace(workspaceId, payload);
     sendToUser(userId, payload);
+}
+
+export function emitWorkspaceJoined(userId: string, workspace: object) {
+    sendToUser(userId, {
+        type: "WORKSPACE_JOINED",
+        category: "sync",
+        workspace,
+    });
+}
+
+export function emitWorkspaceInviteResponse(
+    inviterId: string,
+    payload: {
+        workspaceId: string;
+        workspaceName: string;
+        action: "accepted" | "rejected";
+        invitedUserId: string;
+        invitedUserName: string;
+        invitedUserEmail: string;
+    }
+) {
+    sendToUser(inviterId, {
+        type: "WORKSPACE_INVITE_RESPONSE",
+        category: "invite",
+        payload,
+    });
 }

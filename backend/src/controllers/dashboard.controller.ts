@@ -44,8 +44,8 @@ export const getDashboardStats = async (
                      COUNT(*)::int AS total,
                      COUNT(*) FILTER (WHERE status = 'done')::int AS done,
                      COUNT(*) FILTER (WHERE status = 'in_review')::int AS in_review,
-                     COUNT(*) FILTER (WHERE status != 'done' AND due_date IS NOT NULL AND due_date < NOW())::int AS overdue,
-                     COUNT(*) FILTER (WHERE status != 'done' AND due_date IS NOT NULL AND due_date >= NOW() AND due_date < NOW() + INTERVAL '3 days')::int AS due_soon
+                     COUNT(*) FILTER (WHERE status != 'done' AND due_date IS NOT NULL AND due_date::date < CURRENT_DATE)::int AS overdue,
+                     COUNT(*) FILTER (WHERE status != 'done' AND due_date IS NOT NULL AND due_date::date >= CURRENT_DATE AND due_date::date <= CURRENT_DATE + INTERVAL '3 days')::int AS due_soon
                  FROM tasks t
                  WHERE
                      (
@@ -82,7 +82,7 @@ export const getDashboardStats = async (
                 [user_id]
             ),
 
-            // 5. Upcoming deadlines (next 5 tasks assigned to user, not done, with due date)
+            // 5. Upcoming deadlines (next 5 tasks assigned to user, not done, due within 7 days)
             pool.query(
                 `SELECT t.id, t.title, t.status, t.priority, t.due_date,
                         p.name AS project_name, w.name AS workspace_name
@@ -114,6 +114,8 @@ export const getDashboardStats = async (
                  )
                    AND t.status != 'done'
                    AND t.due_date IS NOT NULL
+                   AND t.due_date::date >= CURRENT_DATE
+                   AND t.due_date::date <= CURRENT_DATE + INTERVAL '7 days'
                  ORDER BY t.due_date ASC
                  LIMIT 5`,
                 [user_id]

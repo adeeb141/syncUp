@@ -1,6 +1,6 @@
 import { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { s3 } from "../config/s3";
+import { getS3 } from "../config/s3";
 import { pool } from "../config/DB_connect";
 
 
@@ -45,7 +45,7 @@ export const uploadFile = async (req: any, res: any) => {
 
     const fileKey = `workspace/${workspace_id}/project/${project_id || "none"}/task/${task_id || "none"}/${Date.now()}-${req.file.originalname}`;
 
-    await s3.send(new PutObjectCommand({
+    await getS3().send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET!,
       Key: fileKey,
       Body: req.file.buffer,
@@ -175,7 +175,7 @@ export const deleteFile = async (req: any, res: any) => {
     // 🔥 USE STORED KEY
     const fileKey = fileData.key;
 
-    await s3.send(new DeleteObjectCommand({
+    await getS3().send(new DeleteObjectCommand({
       Bucket: process.env.S3_BUCKET!,
       Key: fileKey
     }));
@@ -227,7 +227,7 @@ export const getFileUrl = async (req: any, res: any) => {
       Key: fileKey,
     });
 
-    const signedUrl = await getSignedUrl(s3, command, {
+    const signedUrl = await getSignedUrl(getS3(), command, {
       expiresIn: 60 * 5,
     });
 

@@ -1,9 +1,35 @@
 import { pool } from "../config/DB_connect";
 import { Request, Response } from "express";
 import { getClients } from "../socket";
+import { emitMemberAdded, emitWorkspaceInviteResponse, emitWorkspaceJoined } from "../socket/emitter";
 
 interface Users{
     id:string
+}
+interface InviteDetails {
+    id: string;
+    workspace_id: string;
+    invited_by_id: string;
+    invited_user_id: string;
+    workspace_name: string;
+    invited_user_name: string;
+    invited_user_email: string;
+}
+interface WorkspaceForUser {
+    workspace_id: string;
+    name: string;
+    slug: string;
+    description: string;
+    owner_id: string;
+    created_at: Date;
+    role: "owner" | "admin" | "member";
+}
+interface WorkspaceMemberWithName {
+    workspace_id: string;
+    user_id: string;
+    role: "owner" | "admin" | "member";
+    joined_at: Date;
+    name: string;
 }
 export const sendInvite = async (req: Request<{}, {}, { invited_user_email: string,workspace_id:string }>, res: Response): Promise<Response | void> => {
     try {
@@ -74,21 +100,34 @@ export const acceptInvite = async (req: Request<{}, {}, { workspace_id: string }
 
         if (!workspace_id || !user_id) return res.status(400).json({ message: "Missing required fields" });
 
-        const inviteCheck = await pool.query(
-            "SELECT * FROM workspace_invites WHERE workspace_id = $1 AND invited_user_id = $2 AND status = 'pending'",
+        const inviteCheck = await pool.query<InviteDetails>(
+            `SELECT
+                wi.id,
+                wi.workspace_id,
+                wi.invited_by_id,
+                wi.invited_user_id,
+                w.name AS workspace_name,
+                u.name AS invited_user_name,
+                u.email AS invited_user_email
+             FROM workspace_invites wi
+             JOIN workspaces w ON w.id = wi.workspace_id
+             JOIN users u ON u.id = wi.invited_user_id
+             WHERE wi.workspace_id = $1 AND wi.invited_user_id = $2 AND wi.status = 'pending'
+             LIMIT 1`,
             [workspace_id, user_id]
         );
 
         if (inviteCheck.rowCount === 0) {
             return res.status(404).json({ message: "No pending invite found" });
         }
+        const inviteDetails = inviteCheck.rows[0];
 
         const client = await pool.connect();
         try {
             await client.query("BEGIN");
             await client.query(
-                "DELETE FROM workspace_invites WHERE workspace_id = $1 AND invited_user_id = $2 AND status = 'pending'",
-                [workspace_id, user_id]
+                "DELETE FROM workspace_invites WHERE id = $1 AND status = 'pending'",
+                [inviteDetails.id]
             );
             await client.query(
                 "INSERT INTO workspace_members (workspace_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING",
@@ -102,7 +141,57 @@ export const acceptInvite = async (req: Request<{}, {}, { workspace_id: string }
             client.release();
         }
 
-        return res.status(200).json({ message: "Invite accepted successfully" });
+        const [workspaceResult, memberResult] = await Promise.all([
+            pool.query<WorkspaceForUser>(
+                `SELECT
+                    wm.workspace_id,
+                    w.name,
+                    w.slug,
+                    w.description,
+                    w.owner_id,
+                    w.created_at,
+                    wm.role
+                 FROM workspace_members wm
+                 JOIN workspaces w ON w.id = wm.workspace_id
+                 WHERE wm.workspace_id = $1 AND wm.user_id = $2
+                 LIMIT 1`,
+                [workspace_id, user_id]
+            ),
+            pool.query<WorkspaceMemberWithName>(
+                `SELECT
+                    wm.workspace_id,
+                    wm.user_id,
+                    wm.role,
+                    wm.joined_at,
+                    u.name
+                 FROM workspace_members wm
+                 LEFT JOIN users u ON u.id = wm.user_id
+                 WHERE wm.workspace_id = $1 AND wm.user_id = $2
+                 LIMIT 1`,
+                [workspace_id, user_id]
+            ),
+        ]);
+
+        if (memberResult.rowCount && memberResult.rowCount > 0) {
+            await emitMemberAdded(workspace_id, memberResult.rows[0]);
+        }
+        if (workspaceResult.rowCount && workspaceResult.rowCount > 0) {
+            emitWorkspaceJoined(user_id, workspaceResult.rows[0]);
+        }
+
+        emitWorkspaceInviteResponse(inviteDetails.invited_by_id, {
+            workspaceId: workspace_id,
+            workspaceName: inviteDetails.workspace_name,
+            action: "accepted",
+            invitedUserId: user_id,
+            invitedUserName: inviteDetails.invited_user_name,
+            invitedUserEmail: inviteDetails.invited_user_email,
+        });
+
+        return res.status(200).json({
+            message: "Invite accepted successfully",
+            workspace: workspaceResult.rows[0] ?? null,
+        });
     } catch (e) {
         const err = e as Error;
         return res.status(500).json({ message: err.message });
@@ -116,14 +205,41 @@ export const rejectInvite = async (req: Request<{}, {}, { workspace_id: string }
 
         if (!workspace_id || !user_id) return res.status(400).json({ message: "Missing required fields" });
 
-        const deleteResult = await pool.query(
-            "DELETE FROM workspace_invites WHERE workspace_id = $1 AND invited_user_id = $2 AND status = 'pending'",
+        const inviteCheck = await pool.query<InviteDetails>(
+            `SELECT
+                wi.id,
+                wi.workspace_id,
+                wi.invited_by_id,
+                wi.invited_user_id,
+                w.name AS workspace_name,
+                u.name AS invited_user_name,
+                u.email AS invited_user_email
+             FROM workspace_invites wi
+             JOIN workspaces w ON w.id = wi.workspace_id
+             JOIN users u ON u.id = wi.invited_user_id
+             WHERE wi.workspace_id = $1 AND wi.invited_user_id = $2 AND wi.status = 'pending'
+             LIMIT 1`,
             [workspace_id, user_id]
         );
 
-        if (deleteResult.rowCount === 0) {
+        if (inviteCheck.rowCount === 0) {
             return res.status(404).json({ message: "No pending invite found" });
         }
+        const inviteDetails = inviteCheck.rows[0];
+
+        await pool.query(
+            "DELETE FROM workspace_invites WHERE id = $1 AND status = 'pending'",
+            [inviteDetails.id]
+        );
+
+        emitWorkspaceInviteResponse(inviteDetails.invited_by_id, {
+            workspaceId: workspace_id,
+            workspaceName: inviteDetails.workspace_name,
+            action: "rejected",
+            invitedUserId: user_id,
+            invitedUserName: inviteDetails.invited_user_name,
+            invitedUserEmail: inviteDetails.invited_user_email,
+        });
 
         return res.status(200).json({ message: "Invite rejected" });
     } catch (e) {

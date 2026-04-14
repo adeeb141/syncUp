@@ -21,6 +21,16 @@ interface WorkspaceReqBody {
     description: string;
 }
 
+interface WorkspaceUpcomingDeadline {
+    id: string;
+    title: string;
+    status: "todo" | "in_progress";
+    priority: "low" | "medium" | "high";
+    due_date: string;
+    project_id: string;
+    project_name: string;
+}
+
 export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, res: Response): Promise<Response | void> => {
     const client = await pool.connect();
     try {
@@ -211,17 +221,31 @@ export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response)
 export const getWorkspaceProjectsAndMembers = async (req: Request<{ workspace_id: string }, {}, {}>, res: Response):
     Promise<Response | void> => {
     try {
-
         const workspace_id = req.params.workspace_id;
+        const user_id = req.user?.id;
 
-        //check if workspace exist and return the workspace's info
-        const check = await pool.query(`
-            SELECT * FROM workspaces WHERE id=$1`,
-            [workspace_id]);
+        if (!user_id) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        // Check workspace exists and requester is a member.
+        const check = await pool.query<{ id: string; role: "owner" | "admin" | "member" | null }>(
+            `SELECT w.id, wm.role
+             FROM workspaces w
+             LEFT JOIN workspace_members wm
+             ON wm.workspace_id = w.id AND wm.user_id = $2
+             WHERE w.id = $1`,
+            [workspace_id, user_id]
+        );
         if (check.rowCount === 0) {
             return res.status(404).json({ message: "Workspace doesnt exist" });
         }
-        const [checkAndReturnMembers, checkAndReturnProjects] = await Promise.all([
+
+        if (check.rows[0].role === null) {
+            return res.status(403).json({ message: "You are not a member of this workspace" });
+        }
+
+        const [checkAndReturnMembers, checkAndReturnProjects, upcomingDeadlinesResult, dueSoonCountResult] = await Promise.all([
             pool.query(
                 `SELECT 
     wm.user_id,
@@ -236,14 +260,49 @@ export const getWorkspaceProjectsAndMembers = async (req: Request<{ workspace_id
                 ` SELECT id,name,description,status,created_by,created_at
               FROM projects
               WHERE workspace_id = $1`,
-                [workspace_id])
+                [workspace_id]),
+            pool.query<WorkspaceUpcomingDeadline>(
+                `SELECT
+                    t.id,
+                    t.title,
+                    t.status,
+                    t.priority,
+                    t.due_date,
+                    p.id AS project_id,
+                    p.name AS project_name
+                 FROM tasks t
+                 JOIN projects p ON p.id = t.project_id
+                 WHERE p.workspace_id = $1
+                   AND t.status IN ('todo', 'in_progress')
+                   AND t.due_date IS NOT NULL
+                   AND t.due_date::date >= CURRENT_DATE
+                   AND t.due_date::date <= CURRENT_DATE + INTERVAL '3 days'
+                 ORDER BY t.due_date ASC
+                 LIMIT 5`,
+                [workspace_id]
+            ),
+            pool.query<{ count: string }>(
+                `SELECT COUNT(*)::int AS count
+                 FROM tasks t
+                 JOIN projects p ON p.id = t.project_id
+                 WHERE p.workspace_id = $1
+                   AND t.status IN ('todo', 'in_progress')
+                   AND t.due_date IS NOT NULL
+                   AND t.due_date::date >= CURRENT_DATE
+                   AND t.due_date::date <= CURRENT_DATE + INTERVAL '3 days'`,
+                [workspace_id]
+            )
         ])
         const workspaceMembers = checkAndReturnMembers.rows;
         const workspaceProjects = checkAndReturnProjects.rows;
+        const upcomingDeadlines = upcomingDeadlinesResult.rows;
+        const dueSoonCount = Number(dueSoonCountResult.rows[0]?.count ?? 0);
 
         res.status(200).json({
             workspaceMembers,
-            workspaceProjects
+            workspaceProjects,
+            upcomingDeadlines,
+            dueSoonCount
         })
     } catch (e) {
         const err = e as Error;
