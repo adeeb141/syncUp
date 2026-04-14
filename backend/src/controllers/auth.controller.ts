@@ -106,3 +106,17 @@ export const getMe = async (req:Request<{},{},{}>, res:Response) => {
     return res.status(500).json({ message: err.message });
   }
 };
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("loginToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ message: err.message });
+  }
+};

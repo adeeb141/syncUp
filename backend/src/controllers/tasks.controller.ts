@@ -315,29 +315,46 @@ export const getUserTasks = async (req: Request<{}, {}, {}>, res: Response): Pro
         }
 
         const tasks = await pool.query(
-            `SELECT 
-    t.*, 
-    p.name as project_name,
+            `SELECT
+    t.*,
+    p.name AS project_name,
     p.workspace_id,
-    w.name as workspace_name,
-
+    w.name AS workspace_name,
+    COALESCE(ARRAY_REMOVE(ARRAY_AGG(DISTINCT ta.user_id), NULL), ARRAY[]::uuid[]) AS assignee_ids,
     STRING_AGG(DISTINCT u.name, ',') AS assignee_name,
-
-    u_creator.name as created_by_name
-
+    u_creator.name AS created_by_name
 FROM tasks t
 JOIN projects p ON p.id = t.project_id
 JOIN workspaces w ON w.id = p.workspace_id
-
 LEFT JOIN task_assignees ta ON ta.task_id = t.id
 LEFT JOIN users u ON u.id = ta.user_id
-
 LEFT JOIN users u_creator ON u_creator.id = t.created_by
-
-WHERE t.assignee_id = $1 OR t.created_by = $1
-
+WHERE
+    t.created_by = $1
+    OR (
+        (
+            EXISTS (
+                SELECT 1
+                FROM task_assignees ta_any
+                WHERE ta_any.task_id = t.id
+            )
+            AND EXISTS (
+                SELECT 1
+                FROM task_assignees ta_user
+                WHERE ta_user.task_id = t.id
+                  AND ta_user.user_id = $1
+            )
+        )
+        OR (
+            NOT EXISTS (
+                SELECT 1
+                FROM task_assignees ta_any
+                WHERE ta_any.task_id = t.id
+            )
+            AND t.assignee_id = $1
+        )
+    )
 GROUP BY t.id, p.name, p.workspace_id, w.name, u_creator.name
-
 ORDER BY t.due_date ASC NULLS LAST, t.created_at ASC;`,
             [user_id]
         );
@@ -366,25 +383,46 @@ export const requestTaskReview = async (
         // check task exists, get context
         const taskCheck = await pool.query<{
             workspace_id: string;
-            assignee_id: string;
+            assignee_id: string | null;
             created_by: string;
             status: string;
+            has_multi_assignees: boolean;
+            is_multi_assignee: boolean;
         }>(
-            `SELECT p.workspace_id, t.assignee_id, t.created_by, t.status
+            `SELECT
+                p.workspace_id,
+                t.assignee_id,
+                t.created_by,
+                t.status,
+                EXISTS (
+                    SELECT 1
+                    FROM task_assignees ta
+                    WHERE ta.task_id = t.id
+                ) AS has_multi_assignees,
+                EXISTS (
+                    SELECT 1
+                    FROM task_assignees ta
+                    WHERE ta.task_id = t.id
+                      AND ta.user_id = $2
+                ) AS is_multi_assignee
              FROM tasks t
              JOIN projects p ON p.id = t.project_id
              WHERE t.id = $1`,
-            [task_id]
+            [task_id, requester_id]
         );
 
         if (taskCheck.rowCount === 0) {
             return res.status(404).json({ message: "Task not found" });
         }
 
-        const { workspace_id, assignee_id, created_by, status } = taskCheck.rows[0];
+        const { workspace_id, assignee_id, created_by, status, has_multi_assignees, is_multi_assignee } = taskCheck.rows[0];
 
         // only the assignee can request review
-        if (assignee_id !== requester_id) {
+        const canRequesterReview = has_multi_assignees
+            ? is_multi_assignee
+            : assignee_id === requester_id;
+
+        if (!canRequesterReview) {
             return res.status(403).json({ message: "Only the task assignee can request review" });
         }
 
@@ -460,14 +498,22 @@ export const handleTaskReview = async (
         // check task exists, get context
         const taskCheck = await pool.query<{
             workspace_id: string;
-            assignee_id: string;
+            assignee_id: string | null;
+            assignee_ids: string[];
             created_by: string;
             status: string;
         }>(
-            `SELECT p.workspace_id, t.assignee_id, t.created_by, t.status
+            `SELECT
+                p.workspace_id,
+                t.assignee_id,
+                COALESCE(ARRAY_REMOVE(ARRAY_AGG(DISTINCT ta.user_id), NULL), ARRAY[]::uuid[]) AS assignee_ids,
+                t.created_by,
+                t.status
              FROM tasks t
              JOIN projects p ON p.id = t.project_id
-             WHERE t.id = $1`,
+             LEFT JOIN task_assignees ta ON ta.task_id = t.id
+             WHERE t.id = $1
+             GROUP BY p.workspace_id, t.assignee_id, t.created_by, t.status`,
             [task_id]
         );
 
@@ -475,7 +521,7 @@ export const handleTaskReview = async (
             return res.status(404).json({ message: "Task not found" });
         }
 
-        const { workspace_id, assignee_id, created_by, status } = taskCheck.rows[0];
+        const { workspace_id, assignee_id, assignee_ids, created_by, status } = taskCheck.rows[0];
 
         // only the task creator can review
         if (created_by !== requester_id) {
@@ -505,8 +551,17 @@ export const handleTaskReview = async (
         // broadcast update to workspace
         await emitTaskUpdated(workspace_id, updatedTask);
 
-        // notify the assignee of the result
-        emitTaskReviewResult(assignee_id, updatedTask, action, newRemarks ?? undefined);
+        // notify all assignees (new + legacy model)
+        const recipients = new Set<string>();
+        if ((assignee_ids ?? []).length > 0) {
+            for (const id of assignee_ids) recipients.add(id);
+        } else if (assignee_id) {
+            recipients.add(assignee_id);
+        }
+
+        for (const assigneeUserId of recipients) {
+            emitTaskReviewResult(assigneeUserId, updatedTask, action, newRemarks ?? undefined);
+        }
 
         return res.status(200).json({
             message: action === "approve" ? "Task approved" : "Task rejected",

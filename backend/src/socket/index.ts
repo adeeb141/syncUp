@@ -4,7 +4,7 @@ import { Hocuspocus } from "@hocuspocus/server";
 import { saveDocument, loadDocument } from "../utils/fileStorage";
 import { pool } from "../config/DB_connect";
 
-const clients = new Map<string, WebSocket>();
+const clients = new Map<string, Set<WebSocket>>();
 
 const hocuspocus = new Hocuspocus({
   name: "syncUp-collaboration",
@@ -32,7 +32,10 @@ export function initSocket(server: Server) {
       try {
         const message = JSON.parse(data.toString());
         if (message.type === "REGISTER") {
-          clients.set(message.userId, ws);
+          if (!clients.has(message.userId)) {
+            clients.set(message.userId, new Set<WebSocket>());
+          }
+          clients.get(message.userId)?.add(ws);
           console.log(`User ${message.userId} registered`);
 
           try {
@@ -68,11 +71,13 @@ export function initSocket(server: Server) {
     });
 
     ws.on("close", () => {
-      for (const [userId, socket] of clients.entries()) {
-        if (socket === ws) {
-          clients.delete(userId);
+      for (const [userId, sockets] of clients.entries()) {
+        if (sockets.has(ws)) {
+          sockets.delete(ws);
+          if (sockets.size === 0) {
+            clients.delete(userId);
+          }
           console.log(`User ${userId} disconnected`);
-          break;
         }
       }
     });

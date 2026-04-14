@@ -34,19 +34,23 @@ export const sendInvite = async (req: Request<{}, {}, { invited_user_email: stri
 
 
         //send ws message to user
-        const socket = clients.get(invited_user_id);
-        if (socket && socket.readyState === socket.OPEN) {
-            socket.send(JSON.stringify({
-                type: "workspace_invite",
-                category: "invite",
-                payload: {
-                    id: invite_id,
-                    workspace_id: workspace_id,
-                    invited_by_name: user_name,
-                    invited_by_email: email,
-                    workspace_name: workspace_name
+        const sockets = clients.get(invited_user_id);
+        if (sockets) {
+            for (const socket of sockets) {
+                if (socket.readyState === socket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: "workspace_invite",
+                        category: "invite",
+                        payload: {
+                            id: invite_id,
+                            workspace_id: workspace_id,
+                            invited_by_name: user_name,
+                            invited_by_email: email,
+                            workspace_name: workspace_name
+                        }
+                    }));
                 }
-            }))
+            }
         }
 
         res.status(200).json({

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { useAuthStore } from "@/stores/authStore";
 import { FilePanel } from "@/components/ui/FilePanel";
 import { DocumentPanel } from "@/components/ui/DocumentPanel";
+import { WebsocketServerMessages } from "@/types";
 
 // Type for tasks returned by the "my tasks" API
 interface MyTask {
@@ -18,7 +19,8 @@ interface MyTask {
   description: string;
   status: "todo" | "in_progress" | "in_review" | "done";
   priority: "low" | "medium" | "high";
-  assignee_id: string;
+  assignee_id: string | null;
+  assignee_ids?: string[];
   assignee_name: string | null;
   created_by: string;
   created_by_name: string | null;
@@ -75,28 +77,60 @@ export default function MyTasksPage() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
 
+  const isTaskAssignedToCurrentUser = (task: MyTask): boolean => {
+    if (!user?.id) return false;
+    if (Array.isArray(task.assignee_ids) && task.assignee_ids.length > 0) {
+      return task.assignee_ids.includes(user.id);
+    }
+    return task.assignee_id === user.id;
+  };
+
   const expandedTask = tasks.find((t) => t.id === expandedId);
   const names = expandedTask?.assignee_name
     ? expandedTask.assignee_name.split(",").map(n => n.trim())
     : [];
-  useEffect(() => {
-    const fetchMyTasks = async () => {
-      setIsLoading(true);
-      try {
-        const data = await api.get<{ tasks: MyTask[] }>("/api/projects/my-tasks");
-        setTasks(data.tasks);
-        setError(false);
-      } catch (e) {
-        console.error(e);
+  const fetchMyTasks = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) setIsLoading(true);
+    try {
+      const data = await api.get<{ tasks: MyTask[] }>("/api/projects/my-tasks");
+      setTasks(data.tasks);
+      setError(false);
+    } catch (e) {
+      console.error(e);
+      if (!silent) {
         setError(true);
         setTasks([]);
-      } finally {
-        setIsLoading(false);
       }
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMyTasks();
+  }, [fetchMyTasks]);
+
+  useEffect(() => {
+    const handleSocketMessage = (event: Event) => {
+      const message = (event as CustomEvent<WebsocketServerMessages>).detail;
+      if (!message || message.category !== "sync") return;
+
+      const taskEvents = new Set([
+        "TASK_UPDATED",
+        "TASK_DELETED",
+        "TASK_ASSIGNED",
+        "TASK_REVIEW_REQUESTED",
+        "TASK_REVIEW_RESULT",
+      ]);
+
+      if (!taskEvents.has(message.type)) return;
+      fetchMyTasks({ silent: true });
     };
 
-    fetchMyTasks();
-  }, []);
+    window.addEventListener("syncup:ws-message", handleSocketMessage);
+    return () => window.removeEventListener("syncup:ws-message", handleSocketMessage);
+  }, [fetchMyTasks]);
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -221,7 +255,7 @@ export default function MyTasksPage() {
 
   // Tab filtering
   const tabFiltered = tasks.filter((t) => {
-    if (tab === "assigned") return t.assignee_id === user?.id;
+    if (tab === "assigned") return isTaskAssignedToCurrentUser(t);
     return t.created_by === user?.id;
   });
 
@@ -456,7 +490,7 @@ export default function MyTasksPage() {
             const sm = STATUS_META[task.status] || STATUS_META.todo;
             const pm = PRIORITY_META[task.priority] || PRIORITY_META.low;
             const overdue = task.status !== "done" && isOverdue(task.due_date);
-            const isAssignee = task.assignee_id === user?.id;
+            const isAssignee = isTaskAssignedToCurrentUser(task);
             const isCreator = task.created_by === user?.id;
             const isInReview = task.status === "in_review";
             const canRequestReview = isAssignee && (task.status === "todo" || task.status === "in_progress");

@@ -125,16 +125,20 @@ export const addWorkspaceMember = async (req: Request<{ workspaceId: string }, {
     const clients=getClients();
 
     if(clients.has(user_id)){
-      const socket=clients.get(user_id);
-      if(socket){
-        socket.send(JSON.stringify({
-          type:"MEMBER_ADDED_TO_WORKSPACE",
-          category:"notification",
-          payload:{
-            workspaceId:workspace_id,
-            message:"You have been added to a workspace"
+      const sockets = clients.get(user_id);
+      if(sockets){
+        for (const socket of sockets) {
+          if (socket.readyState === socket.OPEN) {
+            socket.send(JSON.stringify({
+              type:"MEMBER_ADDED_TO_WORKSPACE",
+              category:"notification",
+              payload:{
+                workspaceId:workspace_id,
+                message:"You have been added to a workspace"
+              }
+            }));
           }
-      }))
+        }
       }
     }
     return res.status(201).json({

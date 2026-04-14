@@ -46,8 +46,29 @@ export const getDashboardStats = async (
                      COUNT(*) FILTER (WHERE status = 'in_review')::int AS in_review,
                      COUNT(*) FILTER (WHERE status != 'done' AND due_date IS NOT NULL AND due_date < NOW())::int AS overdue,
                      COUNT(*) FILTER (WHERE status != 'done' AND due_date IS NOT NULL AND due_date >= NOW() AND due_date < NOW() + INTERVAL '3 days')::int AS due_soon
-                 FROM tasks
-                 WHERE assignee_id = $1`,
+                 FROM tasks t
+                 WHERE
+                     (
+                         EXISTS (
+                             SELECT 1
+                             FROM task_assignees ta_any
+                             WHERE ta_any.task_id = t.id
+                         )
+                         AND EXISTS (
+                             SELECT 1
+                             FROM task_assignees ta_user
+                             WHERE ta_user.task_id = t.id
+                               AND ta_user.user_id = $1
+                         )
+                     )
+                     OR (
+                         NOT EXISTS (
+                             SELECT 1
+                             FROM task_assignees ta_any
+                             WHERE ta_any.task_id = t.id
+                         )
+                         AND t.assignee_id = $1
+                     )`,
                 [user_id]
             ),
 
@@ -68,7 +89,29 @@ export const getDashboardStats = async (
                  FROM tasks t
                  JOIN projects p ON p.id = t.project_id
                  JOIN workspaces w ON w.id = p.workspace_id
-                 WHERE t.assignee_id = $1
+                 WHERE (
+                     (
+                         EXISTS (
+                             SELECT 1
+                             FROM task_assignees ta_any
+                             WHERE ta_any.task_id = t.id
+                         )
+                         AND EXISTS (
+                             SELECT 1
+                             FROM task_assignees ta_user
+                             WHERE ta_user.task_id = t.id
+                               AND ta_user.user_id = $1
+                         )
+                     )
+                     OR (
+                         NOT EXISTS (
+                             SELECT 1
+                             FROM task_assignees ta_any
+                             WHERE ta_any.task_id = t.id
+                         )
+                         AND t.assignee_id = $1
+                     )
+                 )
                    AND t.status != 'done'
                    AND t.due_date IS NOT NULL
                  ORDER BY t.due_date ASC

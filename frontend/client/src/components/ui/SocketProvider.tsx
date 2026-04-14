@@ -25,6 +25,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         ws.onmessage = (event) => {
             const message = JSON.parse(event.data) as WebsocketServerMessages;
+            window.dispatchEvent(new CustomEvent("syncup:ws-message", { detail: message }));
             if (message.category === "notification") {
                 pushNotification({
                     id: crypto.randomUUID(),

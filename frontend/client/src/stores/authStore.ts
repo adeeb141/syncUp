@@ -1,13 +1,13 @@
 import { User } from "@/types";
 import { create } from "zustand";
+import { api } from "@/lib/api";
 
 type StoreType = {
   user:User | null;
   isLoading:boolean,
   setAuth:(user:User)=>void,
   setLoading:(value:boolean)=>void,
-  logout:()=>void;
-
+  logout:()=>Promise<void>;
 };
 
 export const useAuthStore = create<StoreType>((set) => ({
@@ -21,10 +21,16 @@ export const useAuthStore = create<StoreType>((set) => ({
   setLoading :(value)=>{
     set({isLoading:value})
   },
-  logout :()=>{
-    set({
-        user:null,
-        isLoading:false
-    })
+  logout :async ()=>{
+    try {
+      await api.post("/api/auth/logout", {});
+    } catch (error) {
+       console.error("Logout failed:", error);
+    } finally {
+      set({
+          user:null,
+          isLoading:false
+      })
+    }
   }
 }));

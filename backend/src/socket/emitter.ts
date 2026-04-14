@@ -12,9 +12,13 @@ async function broadcastToWorkspace(workspaceId: string, payload: object) {
     );
 
     for (const row of members.rows) {
-        const socket = clients.get(row.user_id);
-        if (socket && socket.readyState === socket.OPEN) {
-            socket.send(JSON.stringify(payload));
+        const sockets = clients.get(row.user_id);
+        if (!sockets) continue;
+
+        for (const socket of sockets) {
+            if (socket.readyState === socket.OPEN) {
+                socket.send(JSON.stringify(payload));
+            }
         }
     }
 }
@@ -23,9 +27,13 @@ async function broadcastToWorkspace(workspaceId: string, payload: object) {
 
 function sendToUser(userId: string, payload: object) {
     const clients = getClients();
-    const socket = clients.get(userId);
-    if (socket && socket.readyState === socket.OPEN) {
-        socket.send(JSON.stringify(payload));
+    const sockets = clients.get(userId);
+    if (!sockets) return;
+
+    for (const socket of sockets) {
+        if (socket.readyState === socket.OPEN) {
+            socket.send(JSON.stringify(payload));
+        }
     }
 }
 export async function emitTaskUpdated(workspaceId: string, task: object) {
