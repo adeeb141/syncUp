@@ -14,10 +14,24 @@ import { useAuthStore } from "@/stores/authStore";
 import { FilePanel } from "@/components/ui/FilePanel";
 import { DocumentPanel } from "@/components/ui/DocumentPanel";
 
+interface WorkspaceUpcomingDeadline {
+  id: string;
+  title: string;
+  status: "todo" | "in_progress";
+  priority: "low" | "medium" | "high";
+  due_date: string;
+  project_id: string;
+  project_name: string;
+}
+
 interface ApiResponse {
   workspaceMembers: workspace_member[];
   workspaceProjects: project[];
+  upcomingDeadlines: WorkspaceUpcomingDeadline[];
+  dueSoonCount: number;
 }
+
+type ApiError = Error & { status?: number };
 
 const PROJECT_COLORS = [
   "bg-tertiary-container/20 text-tertiary",
@@ -28,6 +42,30 @@ const PROJECT_COLORS = [
 const PROJECT_ICONS = [
   "design_services", "terminal", "folder", "analytics"
 ];
+
+function deadlineChipDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return {
+    month: date.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+    day: date.toLocaleDateString("en-US", { day: "2-digit" }),
+  };
+}
+
+function deadlineHint(dateStr: string) {
+  const now = new Date();
+  const due = new Date(dateStr);
+  const msInDay = 24 * 60 * 60 * 1000;
+
+  if (due.getTime() < now.getTime()) return "Overdue";
+  if (due.toDateString() === now.toDateString()) return "Today";
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (due.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+
+  const daysLeft = Math.ceil((due.getTime() - now.getTime()) / msInDay);
+  return `${daysLeft}d left`;
+}
 
 export default function WorkspaceIdPage() {
   const { workspaceId } = useParams();
@@ -50,6 +88,8 @@ export default function WorkspaceIdPage() {
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [showCreateDocModal, setShowCreateDocModal] = useState(false);
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState<WorkspaceUpcomingDeadline[]>([]);
+  const [dueSoonCount, setDueSoonCount] = useState(0);
 
   const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
@@ -69,6 +109,7 @@ export default function WorkspaceIdPage() {
 
   useEffect(() => {
     if (!workspaceIdParam) return;
+
     const fetchWorkspaceInfo = async () => {
       setProjectsLoading(true);
       setMembersLoading(true);
@@ -76,16 +117,29 @@ export default function WorkspaceIdPage() {
         const response = await api.get<ApiResponse>(`/api/workspaces/${workspaceIdParam}/getinfo`);
         setMembers(workspaceIdParam, response.workspaceMembers);
         setProjects(workspaceIdParam, response.workspaceProjects);
+        setUpcomingDeadlines(response.upcomingDeadlines ?? []);
+        setDueSoonCount(response.dueSoonCount ?? 0);
         setError(false);
       } catch (e) {
-        console.log(e);
+        const err = e as ApiError;
+
+        if (err.status === 401 || err.status === 403 || err.status === 404) {
+          setProjectsLoading(false);
+          setMembersLoading(false);
+          router.replace("/dashboard");
+          return;
+        }
+
+        setMembers(workspaceIdParam, []);
+        setProjects(workspaceIdParam, []);
+        setUpcomingDeadlines([]);
+        setDueSoonCount(0);
         setError(true);
-        setProjectsLoading(false);
-        setMembersLoading(false);
       }
     };
+
     fetchWorkspaceInfo();
-  }, [workspaceIdParam]);
+  }, [workspaceIdParam, router, setMembers, setMembersLoading, setProjects, setProjectsLoading]);
 
   const isLoading = projectsLoading || membersLoading;
   if (isLoading) return <LoadingScreen />;
@@ -106,10 +160,6 @@ export default function WorkspaceIdPage() {
             <span className="material-symbols-outlined text-sm">post_add</span>
             Create Document
           </button>
-          <span className="bg-secondary-container text-on-secondary-container px-3 py-2 rounded-full flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
-            +12% Productivity
-          </span>
         </div>
       </div>
 
@@ -155,8 +205,8 @@ export default function WorkspaceIdPage() {
         <div className="bg-error-container/10 p-6 rounded-xl border border-error-container/10 flex flex-col justify-center">
           <p className="text-error font-semibold text-sm">Due Soon</p>
           <div className="flex items-center gap-3 mt-1 text-error">
-            <span className="font-headline text-3xl font-bold">12</span>
-            <span className="material-symbols-outlined">priority_high</span>
+            <span className="font-headline text-3xl font-bold">{dueSoonCount}</span>
+            <span className="material-symbols-outlined">{dueSoonCount > 0 ? "priority_high" : "event_available"}</span>
           </div>
         </div>
       </div>
@@ -260,83 +310,58 @@ export default function WorkspaceIdPage() {
           <div className="pt-4 space-y-4">
             <h4 className="font-headline text-xl font-bold text-on-surface">Upcoming Deadlines</h4>
             <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/5">
-              <div className="divide-y divide-outline-variant/10">
-                <div className="p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex flex-col items-center justify-center bg-error-container/10 rounded-lg">
-                      <span className="text-[10px] font-extrabold text-error">OCT</span>
-                      <span className="text-lg font-headline font-bold text-error leading-none">24</span>
-                    </div>
-                    <div>
-                      <p className="font-bold text-on-surface text-sm">Final Design Review</p>
-                      <p className="text-on-surface-variant text-xs">Studio Workspace Project</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-error">Tomorrow</p>
-                  </div>
+              {upcomingDeadlines.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-sm font-semibold text-on-surface">No near deadlines</p>
+                  <p className="text-xs text-on-surface-variant mt-1">
+                    Tasks in todo or in_progress due within 3 days will appear here.
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="divide-y divide-outline-variant/10">
+                  {upcomingDeadlines.map((task) => {
+                    const dateChip = deadlineChipDate(task.due_date);
+                    return (
+                      <div
+                        key={task.id}
+                        className="p-4 flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer"
+                        onClick={() => router.push(`/workspaces/${workspaceIdParam}/projects/${task.project_id}`)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 flex flex-col items-center justify-center bg-error-container/10 rounded-lg">
+                            <span className="text-[10px] font-extrabold text-error">{dateChip.month}</span>
+                            <span className="text-lg font-headline font-bold text-error leading-none">{dateChip.day}</span>
+                          </div>
+                          <div>
+                            <p className="font-bold text-on-surface text-sm">{task.title}</p>
+                            <p className="text-on-surface-variant text-xs">{task.project_name}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-bold text-error">{deadlineHint(task.due_date)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Recent Activity Sidebar (1/3 width) */}
+        {/* Workspace Resources Sidebar (1/3 width) */}
         <div className="space-y-6">
-          <h4 className="font-headline text-xl font-bold text-on-surface">Recent Activity</h4>
-          <div className="relative bg-surface-container-low rounded-xl p-6">
-            <div className="space-y-8 relative">
-              <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-outline-variant opacity-20"></div>
-              <div className="relative flex gap-4">
-                <div className="z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[12px] text-on-primary">upload</span>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-on-surface-variant leading-relaxed">
-                    <span className="font-bold text-on-surface">Alex Rivera</span> uploaded 4 new assets to <span className="text-primary font-bold">Branding Identity</span>
-                  </p>
-                  <p className="text-[10px] text-outline mt-1">2 hours ago</p>
-                </div>
-              </div>
-              <div className="relative flex gap-4">
-                <div className="z-10 w-6 h-6 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[12px] text-on-secondary">check</span>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-on-surface-variant leading-relaxed">
-                    <span className="font-bold text-on-surface">Sarah Chen</span> completed the task <span className="font-bold italic text-on-surface">Database Migration</span>
-                  </p>
-                  <p className="text-[10px] text-outline mt-1">5 hours ago</p>
-                </div>
-              </div>
-            </div>
-            <button className="w-full mt-6 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-container-high rounded transition-colors uppercase tracking-widest">Load More Activity</button>
-          </div>
-
-          {/* Workload Card */}
-          <div className="bg-primary text-on-primary p-6 rounded-xl shadow-lg relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary-dim rounded-full opacity-50 blur-2xl"></div>
-            <h5 className="font-bold text-lg mb-4">Workspace Health</h5>
-            <p className="text-sm opacity-80 mb-6">Your team is currently at capacity. You have room for 2 more small projects.</p>
-            <button className="w-full bg-white text-primary font-bold py-2 rounded-lg text-sm">Review Resource Plan</button>
-          </div>
-
-          {/* ── Workspace-level Files ── */}
+          {/* Workspace-level Files */}
           <div className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10 shadow-sm">
             <FilePanel workspaceId={workspaceIdParam ?? ""} />
           </div>
 
-          {/* ── Workspace-level Documents ── */}
+          {/* Workspace-level Documents */}
           <div className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/10 shadow-sm">
             <DocumentPanel workspaceId={workspaceIdParam ?? ""} />
           </div>
         </div>
       </div>
-
-      <button className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-transform active:scale-95 group z-50">
-        <span className="material-symbols-outlined text-3xl">add</span>
-        <span className="absolute right-16 bg-on-surface text-surface text-xs font-bold py-1 px-3 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">New Task</span>
-      </button>
 
       {showCreateProjectModal && workspaceIdParam && (
         <CreateProjectModal

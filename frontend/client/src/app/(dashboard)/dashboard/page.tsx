@@ -46,14 +46,20 @@ interface DashboardData {
   completion_rate: number;
 }
 
-function dueDateUrgency(dateStr: string): "red" | "yellow" | "green" {
-  const now = Date.now();
-  const due = new Date(dateStr).getTime();
-  const msInDay = 86400000;
-  if (due < now) return "red";
-  if (due - now < msInDay * 1) return "red";
-  if (due - now < msInDay * 3) return "yellow";
-  return "green";
+function dueDateUrgency(dateStr: string): { color: "red" | "orange" | "yellow" | "green"; label: string } {
+  const now = new Date();
+  const due = new Date(dateStr);
+
+  // Compare dates only (ignore time)
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const diffDays = Math.floor((dueDay.getTime() - todayStart.getTime()) / 86400000);
+
+  if (diffDays < 0) return { color: "red", label: "Overdue" };
+  if (diffDays === 0) return { color: "orange", label: "Due today" };
+  if (diffDays === 1) return { color: "yellow", label: "Due tomorrow" };
+  if (diffDays <= 3) return { color: "yellow", label: `${diffDays}d left` };
+  return { color: "green", label: "On track" };
 }
 
 const URGENCY_COLORS = {
@@ -62,21 +68,24 @@ const URGENCY_COLORS = {
     text: "text-red-600",
     bg: "bg-red-50 dark:bg-red-500/10",
     border: "border-red-200 dark:border-red-500/20",
-    label: "Overdue",
+  },
+  orange: {
+    dot: "bg-orange-500",
+    text: "text-orange-600",
+    bg: "bg-orange-50 dark:bg-orange-500/10",
+    border: "border-orange-200 dark:border-orange-500/20",
   },
   yellow: {
     dot: "bg-amber-500",
     text: "text-amber-600",
     bg: "bg-amber-50 dark:bg-amber-500/10",
     border: "border-amber-200 dark:border-amber-500/20",
-    label: "Due soon",
   },
   green: {
     dot: "bg-emerald-500",
     text: "text-emerald-600",
     bg: "bg-emerald-50 dark:bg-emerald-500/10",
     border: "border-emerald-200 dark:border-emerald-500/20",
-    label: "On track",
   },
 };
 
@@ -277,7 +286,7 @@ export default function DashboardPage() {
                   <div className="divide-y divide-outline-variant/10">
                     {data.upcoming_deadlines.map((task) => {
                       const urgency = dueDateUrgency(task.due_date);
-                      const uc = URGENCY_COLORS[urgency];
+                      const uc = URGENCY_COLORS[urgency.color];
                       return (
                         <div
                           key={task.id}
@@ -285,7 +294,7 @@ export default function DashboardPage() {
                         >
                           {/* Urgency indicator */}
                           <div
-                            className={`w-2.5 h-2.5 rounded-full shrink-0 ${uc.dot} ${urgency === "red" ? "animate-pulse" : ""}`}
+                            className={`w-2.5 h-2.5 rounded-full shrink-0 ${uc.dot} ${urgency.color === "red" ? "animate-pulse" : ""}`}
                           ></div>
 
                           {/* Content */}
@@ -317,7 +326,7 @@ export default function DashboardPage() {
                             <span
                               className={`text-xs font-bold ${uc.text}`}
                             >
-                              {formatDate(task.due_date)}
+                              {urgency.label} · {formatDate(task.due_date)}
                             </span>
                           </div>
                         </div>

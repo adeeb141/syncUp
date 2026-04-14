@@ -4,11 +4,12 @@ import { useState } from "react";
 import AuthGate from "@/components/ui/AuthGate";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { User } from "@/types";
+import { User, workspacePageInfo } from "@/types";
 import { usePathname } from "next/navigation";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { api } from "@/lib/api";
 import { WorkspaceProvider } from "@/components/ui/WorkspaceProvider";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,7 +20,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 }
 
-function DashboardContent({ children }: { children: React.ReactNode }) {  const { user, logout } = useAuthStore();
+function DashboardContent({ children }: { children: React.ReactNode }) {
+  const { user, logout } = useAuthStore();
   const safeUser = user as User;
   const pathname = usePathname() || "";
   
@@ -27,12 +29,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {  const 
   const removeInvite = useNotificationStore((s) => s.removeInvite);
   const [showNotifications, setShowNotifications] = useState(false);
   const [processingInvites, setProcessingInvites] = useState<Record<string, boolean>>({});
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleInviteAction = async (inviteId: string, workspaceId: string, action: "accept" | "reject") => {
     setProcessingInvites(prev => ({ ...prev, [inviteId]: true }));
     try {
-       await api.post(`/api/invite/${action}`, { workspace_id: workspaceId });
+       const response = await api.post<{ workspace?: workspacePageInfo }>(`/api/invite/${action}`, { workspace_id: workspaceId });
        removeInvite(inviteId);
+       if (action === "accept" && response?.workspace) {
+         const workspaceStore = useWorkspaceStore.getState();
+         if (!workspaceStore.workspaces.some((w) => w.workspace_id === response.workspace?.workspace_id)) {
+           workspaceStore.setWorkspaces([...workspaceStore.workspaces, response.workspace]);
+         }
+       }
     } catch (err) {
        console.error(`Failed to ${action} invite:`, err);
        alert("Something went wrong with the invite action.");
@@ -52,10 +61,30 @@ function DashboardContent({ children }: { children: React.ReactNode }) {  const 
 
   return (
     <div className="bg-surface font-body text-on-surface">
-      <aside className="bg-slate-950 dark:bg-[#0b0f10] text-slate-400 dark:text-[#f7f9fb] font-manrope font-medium text-sm tracking-tight h-screen w-64 fixed left-0 top-0 overflow-y-auto z-40 shadow-2xl dark:shadow-none flex flex-col py-6">
-        <div className="px-6 mb-8">
-          <h1 className="text-lg font-bold text-white tracking-widest uppercase">SyncUp</h1>
-          <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider">Collaborative Task Management Platform</p>
+      <aside className={cn(
+        "bg-slate-950 dark:bg-[#0b0f10] text-slate-400 dark:text-[#f7f9fb] font-manrope font-medium text-sm tracking-tight h-screen fixed left-0 top-0 overflow-y-auto z-40 shadow-2xl dark:shadow-none flex flex-col py-6 transition-all duration-300",
+        isSidebarCollapsed ? "w-20" : "w-64"
+      )}>
+        <div className={cn("mb-8", isSidebarCollapsed ? "px-2" : "px-6")}>
+          <div className={cn("flex items-center", isSidebarCollapsed ? "flex-col gap-2" : "justify-between")}>
+            {isSidebarCollapsed ? (
+              <h1 className="text-sm font-bold text-white tracking-widest uppercase">SU</h1>
+            ) : (
+              <div>
+                <h1 className="text-lg font-bold text-white tracking-widest uppercase">SyncUp</h1>
+                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider">Collaborative Task Management Platform</p>
+              </div>
+            )}
+            <button
+              onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
+              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <span className="material-symbols-outlined text-lg">
+                {isSidebarCollapsed ? "chevron_right" : "chevron_left"}
+              </span>
+            </button>
+          </div>
         </div>
           {navItems.map((item) => {
             if (item.label === "Notifications") {
@@ -64,18 +93,24 @@ function DashboardContent({ children }: { children: React.ReactNode }) {  const 
                   key={item.label}
                   onClick={() => setShowNotifications(!showNotifications)}
                   className={cn(
-                    "w-[calc(100%-1rem)] rounded-lg mx-2 px-3 py-2 flex items-center justify-between transition-all outline-none",
+                    "w-[calc(100%-1rem)] rounded-lg mx-2 px-3 py-2 flex items-center transition-all outline-none relative",
+                    isSidebarCollapsed ? "justify-center" : "justify-between",
                     showNotifications
                       ? "bg-[#575f75] text-white"
                       : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                   )}
+                  title={item.label}
                 >
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined" data-icon={item.icon}>{item.icon}</span>
-                    <span>{item.label}</span>
+                    {!isSidebarCollapsed && <span>{item.label}</span>}
                   </div>
                   {invites.length > 0 && (
-                    <span className="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{invites.length}</span>
+                    isSidebarCollapsed ? (
+                      <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
+                    ) : (
+                      <span className="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{invites.length}</span>
+                    )
                   )}
                 </button>
               );
@@ -87,32 +122,34 @@ function DashboardContent({ children }: { children: React.ReactNode }) {  const 
                 key={item.label}
                 href={item.href}
                 className={cn(
-                  "rounded-lg mx-2 px-3 py-2 flex items-center gap-3 transition-all",
+                  "rounded-lg mx-2 px-3 py-2 flex items-center transition-all",
+                  isSidebarCollapsed ? "justify-center" : "gap-3",
                   isActive
                     ? "bg-[#575f75] text-white"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                 )}
+                title={item.label}
               >
                 <span className="material-symbols-outlined" data-icon={item.icon}>{item.icon}</span>
-                <span>{item.label}</span>
+                {!isSidebarCollapsed && <span>{item.label}</span>}
               </Link>
             )
           })}
-        <div className="mt-auto px-4">
-          <button className="w-full bg-primary-gradient text-on-primary font-semibold py-3 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-            <span className="material-symbols-outlined" data-icon="add">add</span>
-            New Project
-          </button>
-          
-          <div className="mt-6 flex items-center justify-between px-2 py-4 border-t border-slate-800">
+        <div className={cn("mt-auto", isSidebarCollapsed ? "px-2" : "px-4")}>
+          <div className={cn(
+            "flex border-t border-slate-800",
+            isSidebarCollapsed ? "flex-col items-center gap-3 px-1 py-4" : "items-center justify-between px-2 py-4"
+          )}>
             <div className="flex items-center gap-3 overflow-hidden">
                <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800 font-headline text-[0.82rem] font-semibold text-white">
                 {safeUser?.name?.charAt(0).toUpperCase()}
                </div>
-              <div className="overflow-hidden">
-                <p className="text-white text-sm font-semibold truncate">{safeUser?.name}</p>
-                <p className="text-xs text-slate-500 truncate">{safeUser?.email}</p>
-              </div>
+              {!isSidebarCollapsed && (
+                <div className="overflow-hidden">
+                  <p className="text-white text-sm font-semibold truncate">{safeUser?.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{safeUser?.email}</p>
+                </div>
+              )}
             </div>
             <button onClick={() => logout()} className="text-slate-500 hover:text-white transition-colors" title="Logout">
               <span className="material-symbols-outlined text-lg">logout</span>
@@ -121,7 +158,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {  const 
         </div>
       </aside>
 
-      <main className="ml-64 min-h-screen bg-surface relative overflow-hidden">
+      <main className={cn(
+        "min-h-screen bg-surface relative overflow-hidden transition-all duration-300",
+        isSidebarCollapsed ? "ml-20" : "ml-64"
+      )}>
          {children}
 
          {/* Notifications Slide-out Panel */}

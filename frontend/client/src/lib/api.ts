@@ -13,7 +13,7 @@ const fetchApi = async<T>(endpoint: string, options?: RequestInit): Promise<T> =
   // ✅ Read body ONLY ONCE
   const contentType = res.headers.get("content-type");
 
-  let data: any;
+  let data: unknown;
 
   if (contentType && contentType.includes("application/json")) {
     data = await res.json();
@@ -26,10 +26,18 @@ const fetchApi = async<T>(endpoint: string, options?: RequestInit): Promise<T> =
     const message =
       typeof data === "string"
         ? "Server returned HTML (check API route)"
-        : data?.message || "Something went wrong";
+        : typeof data === "object" &&
+          data !== null &&
+          "message" in data &&
+          typeof (data as { message?: unknown }).message === "string"
+          ? (data as { message: string }).message
+          : "Something went wrong";
 
     console.error("API ERROR:", data);
-    throw new Error(message);
+    const error = new Error(message) as Error & { status?: number; data?: unknown };
+    error.status = res.status;
+    error.data = data;
+    throw error;
   }
 
   // ✅ Return JSON or empty object

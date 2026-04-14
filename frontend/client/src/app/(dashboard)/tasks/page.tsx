@@ -55,7 +55,11 @@ function formatDate(dateStr: string | null | undefined): string {
 
 function isOverdue(dateStr: string | null | undefined): boolean {
   if (!dateStr) return false;
-  return new Date(dateStr).getTime() < Date.now();
+  const now = new Date();
+  const due = new Date(dateStr);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  return dueDay.getTime() < todayStart.getTime();
 }
 
 export default function MyTasksPage() {

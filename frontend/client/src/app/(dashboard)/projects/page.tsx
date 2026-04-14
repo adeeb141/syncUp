@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { useAuthStore } from "@/stores/authStore";
 
-// Type for projects returned by the "my projects" API
+
 interface MyProject {
   id: string;
   workspace_id: string;
@@ -33,7 +32,6 @@ const PROJECT_ICONS = [
 ];
 
 export default function MyProjectsPage() {
-  const user = useAuthStore((s) => s.user);
   const [projects, setProjects] = useState<MyProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -82,7 +80,7 @@ export default function MyProjectsPage() {
             My Projects
           </h1>
           <p className="text-on-surface-variant font-body">
-            All projects you&apos;re a member of across your workspaces.
+            Projects where you created tasks or have tasks assigned to you.
           </p>
         </div>
       </div>

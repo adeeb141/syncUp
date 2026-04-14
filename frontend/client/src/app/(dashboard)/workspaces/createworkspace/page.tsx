@@ -6,7 +6,7 @@ import { createSlug } from "@/lib/workspaceSlug";
 import { workspacePageInfo } from "@/types";
 import { useRouter } from "next/navigation";
 interface response {
-  workspace: workspacePageInfo;
+  workspace: workspacePageInfo & { id?: string };
 }
 
 export default function CreateWorkspacePage() {
@@ -25,7 +25,16 @@ export default function CreateWorkspacePage() {
     const slug = workspaceSlug !== "" ? workspaceSlug : createSlug(name);
     try {
       const createWorkspace = await api.post("/api/workspaces/create", { name, slug, description: workspaceDescription, }) as response;
-      const addedWorkspace = createWorkspace.workspace;
+      const createdWorkspace = createWorkspace.workspace;
+      const addedWorkspace: workspacePageInfo = {
+        ...createdWorkspace,
+        workspace_id: createdWorkspace.workspace_id ?? createdWorkspace.id ?? "",
+      };
+
+      if (!addedWorkspace.workspace_id) {
+        throw new Error("Workspace created but could not resolve workspace id.");
+      }
+
       setWorkspaces([...workspaces, addedWorkspace]);
       router.push("/workspaces");
     } catch (err) {

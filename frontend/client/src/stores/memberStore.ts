@@ -9,7 +9,7 @@ type MemberStoreType = {
   setMembers: (workspaceId: string, members: workspace_member[]) => void;
   clearMembers: () => void;
   addMember: (member: workspace_member) => void;
-  removeMember: (userId: string) => void;
+  removeMember: (userId: string, workspaceId?: string) => void;
   setLoading: (value: boolean) => void;
   fetchMembers: (workspaceId: string) => Promise<void>;
 };
@@ -28,13 +28,26 @@ export const useMemberStore = create<MemberStoreType>((set) => ({
   },
 
   addMember: (member) => {
-    set((state) => ({ members: [...state.members, member] }));
+    set((state) => {
+      if (!state.currentWorkspaceId) return state;
+      if (String(state.currentWorkspaceId) !== String(member.workspace_id)) return state;
+
+      const exists = state.members.some((m) => String(m.user_id) === String(member.user_id));
+      if (exists) return state;
+
+      return { members: [...state.members, member] };
+    });
   },
 
-  removeMember: (userId) => {
-    set((state) => ({
-      members: state.members.filter((m) => m.user_id !== userId),
-    }));
+  removeMember: (userId, workspaceId) => {
+    set((state) => {
+      if (workspaceId && String(state.currentWorkspaceId) !== String(workspaceId)) {
+        return state;
+      }
+      return {
+        members: state.members.filter((m) => m.user_id !== userId),
+      };
+    });
   },
 
   setLoading: (value) => {

@@ -50,6 +50,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                         type: "info",
                         message: "You have a new workspace invitation!"
                     });
+                } else if (message.type === "WORKSPACE_INVITE_RESPONSE") {
+                    const action = message.payload.action === "accepted" ? "accepted" : "rejected";
+                    pushNotification({
+                        id: crypto.randomUUID(),
+                        type: action === "accepted" ? "success" : "warning",
+                        message: `${message.payload.invitedUserName} ${action} your invite to ${message.payload.workspaceName}.`
+                    });
                 }
             } else if (message.category === "sync") {
                 const taskStore = useTaskStore.getState();
@@ -115,11 +122,19 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                             workspaceStore.workspaces.filter(w => w.workspace_id !== message.workspaceId)
                         );
                         break;
+                    case "WORKSPACE_JOINED": {
+                        if (!message.workspace) break;
+                        if (workspaceStore.workspaces.some((w) => w.workspace_id === message.workspace.workspace_id)) {
+                            break;
+                        }
+                        workspaceStore.setWorkspaces([...workspaceStore.workspaces, message.workspace]);
+                        break;
+                    }
                     case "MEMBER_ADDED":
                         memberStore.addMember(message.member);
                         break;
                     case "MEMBER_REMOVED":
-                        memberStore.removeMember(message.userId);
+                        memberStore.removeMember(message.userId, message.workspaceId);
                         if (String(message.userId) === String(userId)) {
                             window.location.href = "/workspaces";
                         }
@@ -133,7 +148,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         return () => {
             ws.close();
         };
-    }, [userId]);
+    }, [userId, pushNotification]);
 
     return <>{children}</>;
 };

@@ -50,7 +50,7 @@ export type tasks={
     due_date:string,
     position:number,
     review_remarks?:string | null,
-    created_at:Date
+    created_at:string
 }
 
 export type WebsocketServerMessages={

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
@@ -16,6 +16,12 @@ interface TasksApiResponse {
   total: number;
   tasks: TaskRow[];
 }
+
+interface WorkspaceInfoResponse {
+  workspaceProjects: { id: string }[];
+}
+
+type ApiError = Error & { status?: number };
 
 const STATUS_META: Record<string, { label: string; dot: string; bg: string; text: string }> = {
   todo: { label: "To Do", dot: "bg-surface-variant", bg: "bg-surface-container-high", text: "text-on-surface-variant" },
@@ -34,16 +40,13 @@ function formatDate(dateStr: string | null | undefined): string {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function isDueSoon(dateStr: string | null | undefined): boolean {
-  if (!dateStr) return false;
-  const due = new Date(dateStr).getTime();
-  const now = Date.now();
-  return due > now && due - now < 3 * 24 * 60 * 60 * 1000;
-}
-
 function isOverdue(dateStr: string | null | undefined): boolean {
   if (!dateStr) return false;
-  return new Date(dateStr).getTime() < Date.now();
+  const now = new Date();
+  const due = new Date(dateStr);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  return dueDay.getTime() < todayStart.getTime();
 }
 
 const FILTER_PRIORITIES = ["all", "high", "medium", "low"] as const;
@@ -52,6 +55,7 @@ type PriorityFilter = (typeof FILTER_PRIORITIES)[number];
 export default function ProjectsIdPage() {
    const { removeTask } = useTaskStore();
   const { workspaceId, projectid } = useParams();
+  const router = useRouter();
   const projectId = Array.isArray(projectid) ? projectid[0] : projectid;
   const wsId = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
 
@@ -82,27 +86,45 @@ export default function ProjectsIdPage() {
 
       // update UI
       removeTask(taskId);
-    } catch (err: any) {
-      console.error("DELETE ERROR:", err.message);
-      alert(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete task";
+      console.error("DELETE ERROR:", message);
+      alert(message);
     }
   };
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId || !wsId) return;
+
     const fetchTasks = async () => {
       setTasksLoading(true);
       try {
+        const workspaceInfo = await api.get<WorkspaceInfoResponse>(`/api/workspaces/${wsId}/getinfo`);
+        const belongsToWorkspace = workspaceInfo.workspaceProjects.some((p) => p.id === projectId);
+
+        if (!belongsToWorkspace) {
+          setTasksLoading(false);
+          router.replace("/dashboard");
+          return;
+        }
+
         const data = await api.get<TasksApiResponse>(`/api/workspaces/${projectId}/tasksinfo`);
         setTasks(projectId, data.tasks);
         setError(false);
       } catch (e) {
-        console.error(e);
+        const err = e as ApiError;
+        if (err.status === 401 || err.status === 403 || err.status === 404) {
+          setTasksLoading(false);
+          router.replace("/dashboard");
+          return;
+        }
+
+        console.error(err);
         setError(true);
         setTasksLoading(false);
       }
     };
     fetchTasks();
-  }, [projectId]);
+  }, [projectId, wsId, router, setTasks, setTasksLoading]);
 
   if (tasksLoading) return <LoadingScreen />;
 

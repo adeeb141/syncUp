@@ -5,7 +5,8 @@ type StoreType={
    workspaces:workspacePageInfo[],
    isLoadingWorkspaces:boolean,
    setWorkspaces:(fetchResult:workspacePageInfo[])=>void,
-   setLoadingWorkspaces:(value:boolean)=>void
+   setLoadingWorkspaces:(value:boolean)=>void,
+   clearWorkspaces:()=>void
 }
 
 export const useWorkspaceStore= create<StoreType>((set)=>({
@@ -16,5 +17,11 @@ export const useWorkspaceStore= create<StoreType>((set)=>({
    },
    setLoadingWorkspaces:(value:boolean)=>{
     set({isLoadingWorkspaces:value})
+   },
+   clearWorkspaces:()=>{
+    set({
+      workspaces:[],
+      isLoadingWorkspaces:true
+    })
    }
 }))

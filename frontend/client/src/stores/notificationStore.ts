@@ -21,7 +21,8 @@ type StoreType = {
   removeNotification: (id: string) => void,
   setInvites: (invites: InviteNotification[]) => void,
   addInvite: (invite: InviteNotification) => void,
-  removeInvite: (id: string) => void
+  removeInvite: (id: string) => void,
+  clearAll: () => void
 };
 
 export const useNotificationStore = create<StoreType>((set) => ({
@@ -44,5 +45,8 @@ export const useNotificationStore = create<StoreType>((set) => ({
   },
   removeInvite: (id) => {
     set((state) => ({ invites: state.invites.filter((val) => val.id !== id) }));
-  }
+  },
+  clearAll: () => {
+    set({ notifications: [], invites: [] });
+  },
 }));
