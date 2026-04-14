@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "../config/DB_connect";
+import { canUserEditDocument, DocumentAccess } from "../utils/documentPermissions";
 
 // ======================= CREATE DOCUMENT =======================
 
@@ -158,6 +159,94 @@ export const getWorkspaceDocuments = async (req: Request, res: Response): Promis
     const docs = await pool.query(query, values);
 
     return res.status(200).json({ documents: docs.rows });
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ======================= GET DOCUMENT BY ID =======================
+
+export const getDocumentById = async (
+  req: Request<{ workspace_id: string; document_id: string }>,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const user_id = req.user?.id;
+    const { workspace_id, document_id } = req.params;
+
+    if (!user_id) return res.status(401).json({ message: "Unauthorized" });
+
+    const docResult = await pool.query(
+      `SELECT
+        d.*,
+        u.name as creator_name,
+        EXISTS(
+          SELECT 1
+          FROM workspace_members wm
+          WHERE wm.workspace_id = d.workspace_id AND wm.user_id = $2
+        ) AS is_member,
+        EXISTS(
+          SELECT 1
+          FROM document_collaborators dc
+          WHERE dc.document_id = d.id AND dc.user_id = $2
+        ) AS is_collaborator
+       FROM documents d
+       LEFT JOIN users u ON u.id = d.created_by
+       WHERE d.workspace_id = $1 AND d.id = $3
+       LIMIT 1`,
+      [workspace_id, user_id, document_id]
+    );
+
+    if (docResult.rowCount === 0) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    const doc = docResult.rows[0] as {
+      id: string;
+      name: string;
+      description: string;
+      access: DocumentAccess;
+      workspace_id: string;
+      project_id: string | null;
+      task_id: string | null;
+      room_name: string;
+      created_by: string;
+      creator_name: string | null;
+      created_at: string;
+      is_member: boolean;
+      is_collaborator: boolean;
+    };
+
+    if (!doc.is_member) {
+      return res.status(403).json({ message: "Not part of workspace" });
+    }
+
+    const can_edit = canUserEditDocument({
+      access: doc.access,
+      createdBy: doc.created_by,
+      userId: user_id,
+      isCollaborator: doc.is_collaborator,
+    });
+
+    return res.status(200).json({
+      document: {
+        id: doc.id,
+        name: doc.name,
+        description: doc.description,
+        access: doc.access,
+        workspace_id: doc.workspace_id,
+        project_id: doc.project_id,
+        task_id: doc.task_id,
+        room_name: doc.room_name,
+        created_by: doc.created_by,
+        creator_name: doc.creator_name,
+        created_at: doc.created_at,
+      },
+      permissions: {
+        can_edit,
+        is_creator: doc.created_by === user_id,
+      },
+    });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }

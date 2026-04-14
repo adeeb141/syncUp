@@ -4,10 +4,11 @@ import { useParams, useSearchParams } from "next/navigation";
 import TiptapEditor from "@/components/TiptapEditor";
 
 export default function DocPage() {
-  const { docId } = useParams();
+  const { workspaceId, docId } = useParams();
   const searchParams = useSearchParams();
 
   const roomName = searchParams.get("room") || "";
+  const workspaceIdStr = Array.isArray(workspaceId) ? workspaceId[0] : workspaceId;
   const docIdStr = Array.isArray(docId) ? docId[0] : docId;
 
   if (!roomName) {
@@ -22,5 +23,5 @@ export default function DocPage() {
     );
   }
 
-  return <TiptapEditor roomName={roomName} documentId={docIdStr} />;
+  return <TiptapEditor roomName={roomName} workspaceId={workspaceIdStr} documentId={docIdStr} />;
 }
