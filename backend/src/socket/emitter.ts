@@ -147,6 +147,25 @@ export async function emitWorkspaceDeleted(workspaceId: string, memberIds?: stri
     await broadcastToWorkspace(workspaceId, payload);
 }
 
+export async function emitWorkspaceUpdated(
+    workspaceId: string,
+    workspace: {
+        workspace_id: string;
+        name: string;
+        slug: string;
+        description: string | null;
+        owner_id: string;
+        created_at: Date;
+    }
+) {
+    await broadcastToWorkspace(workspaceId, {
+        type: "WORKSPACE_UPDATED",
+        category: "sync",
+        workspaceId,
+        workspace,
+    });
+}
+
 export async function emitMemberAdded(workspaceId: string, member: object) {
     await broadcastToWorkspace(workspaceId, {
         type: "MEMBER_ADDED",

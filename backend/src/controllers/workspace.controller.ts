@@ -1,6 +1,6 @@
 import { pool } from "../config/DB_connect";
 import { Request, Response } from "express";
-import { emitWorkspaceDeleted } from "../socket/emitter";
+import { emitWorkspaceDeleted, emitWorkspaceUpdated } from "../socket/emitter";
 
 interface Workspace {
     id: string;
@@ -189,6 +189,19 @@ export const updateWorkspace = async (req: Request<{ workspace_id: string }, {},
              RETURNING *`,
             [workspace_id, newName, newSlug, description]
         );
+
+        if (update.rowCount === 0) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        await emitWorkspaceUpdated(workspace_id, {
+            workspace_id,
+            name: update.rows[0].name,
+            slug: update.rows[0].slug,
+            description: update.rows[0].description,
+            owner_id: update.rows[0].owner_id,
+            created_at: update.rows[0].created_at,
+        });
 
         return res.status(200).json({ message: "Update Successful", workspace: update.rows[0] });
 

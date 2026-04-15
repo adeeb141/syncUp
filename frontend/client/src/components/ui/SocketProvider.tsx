@@ -122,6 +122,18 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                             workspaceStore.workspaces.filter(w => w.workspace_id !== message.workspaceId)
                         );
                         break;
+                    case "WORKSPACE_UPDATED":
+                        if (!message.workspaceId || !message.workspace) {
+                            break;
+                        }
+                        workspaceStore.setWorkspaces(
+                            workspaceStore.workspaces.map((workspace) =>
+                                workspace.workspace_id === message.workspaceId
+                                    ? { ...workspace, ...message.workspace, workspace_id: message.workspaceId }
+                                    : workspace
+                            )
+                        );
+                        break;
                     case "WORKSPACE_JOINED": {
                         if (!message.workspace) break;
                         if (workspaceStore.workspaces.some((w) => w.workspace_id === message.workspace.workspace_id)) {

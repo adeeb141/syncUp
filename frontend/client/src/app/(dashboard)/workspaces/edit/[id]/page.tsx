@@ -4,6 +4,19 @@ import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { api } from "@/lib/api";
 import { useRouter, useParams } from "next/navigation";
 import { createSlug } from "@/lib/workspaceSlug";
+import { workspacePageInfo } from "@/types";
+
+type UpdateWorkspaceResponse = {
+  message: string;
+  workspace: {
+    id: string;
+    name: string;
+    slug: string;
+    owner_id: string;
+    description: string | null;
+    created_at: string;
+  };
+};
 
 export default function EditWorkspacePage() {
   const params = useParams();
@@ -34,6 +47,11 @@ export default function EditWorkspacePage() {
 
   const formSubmitHandler = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) {
+      setError("Invalid workspace id.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
 
@@ -41,17 +59,29 @@ export default function EditWorkspacePage() {
     const slug = workspaceSlug !== "" ? workspaceSlug : createSlug(name);
 
     try {
-      const res = await api.post<any>(`/api/workspaces/${id}/update`, {
+      const res = await api.post<UpdateWorkspaceResponse>(`/api/workspaces/${id}/update`, {
         newName: name,
         newSlug: slug,
         description: workspaceDescription,
       });
 
-      const updatedWorkspace = res.data.workspace;
+      if (!res.workspace) {
+        throw new Error("Update succeeded but workspace payload was missing.");
+      }
 
-      const updatedList = workspaces.map((w) =>
-        w.workspace_id === id ? updatedWorkspace : w
-      );
+      const updatedWorkspace = res.workspace;
+
+      const updatedList: workspacePageInfo[] = workspaces.map((w) => {
+        if (w.workspace_id !== id) return w;
+        return {
+          ...w,
+          name: updatedWorkspace.name,
+          slug: updatedWorkspace.slug,
+          description: updatedWorkspace.description,
+          owner_id: updatedWorkspace.owner_id,
+          created_at: updatedWorkspace.created_at,
+        };
+      });
 
       setWorkspaces(updatedList);
 

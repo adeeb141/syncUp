@@ -16,8 +16,9 @@ export type workspacePageInfo={
     workspace_id:string,
     name:string,
     slug:string,
-    description:string,
+    description:string | null,
     owner_id:string,
+    owner_email?:string | null,
     created_at:string,
     role:"owner" |"admin" |"member"
 }

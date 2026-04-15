@@ -2,6 +2,8 @@
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { useState } from "react";
+import { api } from "@/lib/api";
 
 const COLORS = [
   "bg-primary-container text-primary",
@@ -16,6 +18,9 @@ const ICONS = [
 export default function WorkspacesPage() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const isLoadingWorkspaces = useWorkspaceStore((s) => s.isLoadingWorkspaces);
+  const setWorkspaces = useWorkspaceStore((s) => s.setWorkspaces);
+  const [openMenuWorkspaceId, setOpenMenuWorkspaceId] = useState<string | null>(null);
+  const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<string | null>(null);
   const router = useRouter();
 
   const toCreatePage = () => {
@@ -30,8 +35,37 @@ export default function WorkspacesPage() {
     router.push(`/workspaces/${id}`);
   };
 
+  const handleDeleteWorkspace = async (workspaceId: string, workspaceName: string) => {
+    const shouldDelete = window.confirm(
+      `Delete workspace "${workspaceName}"? This action cannot be undone.`
+    );
+
+    if (!shouldDelete) return;
+
+    setDeletingWorkspaceId(workspaceId);
+    try {
+      await api.post(`/api/workspaces/${workspaceId}/delete`, {});
+      const latestWorkspaces = useWorkspaceStore.getState().workspaces;
+      setWorkspaces(latestWorkspaces.filter((workspace) => workspace.workspace_id !== workspaceId));
+    } catch (error) {
+      window.alert((error as Error).message || "Failed to delete workspace.");
+    } finally {
+      setDeletingWorkspaceId(null);
+      setOpenMenuWorkspaceId(null);
+    }
+  };
+
+  const getOwnerBadge = (ownerEmail: string | null | undefined, ownerId: string) => {
+    const source = (ownerEmail && ownerEmail.trim()) ? ownerEmail.split("@")[0] : ownerId;
+    const cleanSource = source.replace(/[^a-zA-Z0-9]/g, "");
+    return cleanSource.slice(0, 2).toUpperCase() || "NA";
+  };
+
   return (
-    <div className="pb-12 px-10 max-w-7xl mx-auto pt-8">
+    <div
+      className="pb-12 px-10 max-w-7xl mx-auto pt-8"
+      onClick={() => setOpenMenuWorkspaceId(null)}
+    >
       {/* Header Section */}
       <div className="flex items-end justify-between mb-10 mt-2">
         <div>
@@ -64,60 +98,90 @@ export default function WorkspacesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {workspaces.filter(Boolean).map((ws, i) => (
-            <div
-              key={ws.workspace_id}
-              onClick={() => redirectToWorkspace(ws.workspace_id)}
-              className="bg-surface-container-lowest rounded-xl p-6 transition-all duration-300 border border-outline-variant/20 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-outline-variant/40 hover:-translate-y-1 group relative cursor-pointer"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${COLORS[i % COLORS.length]}`}>
-                  <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    {ICONS[i % ICONS.length]}
-                  </span>
+          {workspaces.filter(Boolean).map((ws, i) => {
+            const canManageWorkspace = ws.role === "owner" || ws.role === "admin";
+            const canDeleteWorkspace = ws.role === "owner";
+            const ownerEmail = ws.owner_email ?? "Unknown owner";
+
+            return (
+              <div
+                key={ws.workspace_id}
+                onClick={() => redirectToWorkspace(ws.workspace_id)}
+                className="bg-surface-container-lowest rounded-xl p-6 transition-all duration-300 border border-outline-variant/20 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-outline-variant/40 hover:-translate-y-1 group relative cursor-pointer"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${COLORS[i % COLORS.length]}`}>
+                    <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {ICONS[i % ICONS.length]}
+                    </span>
+                  </div>
+
+                  {canManageWorkspace && (
+                    <div className="relative" onClick={(event) => event.stopPropagation()}>
+                      <button
+                        className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-surface-container-low rounded"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setOpenMenuWorkspaceId((currentId) => currentId === ws.workspace_id ? null : ws.workspace_id);
+                        }}
+                      >
+                        <span className="material-symbols-outlined">more_vert</span>
+                      </button>
+
+                      {openMenuWorkspaceId === ws.workspace_id && (
+                        <div className="absolute right-0 top-10 w-44 rounded-lg border border-outline-variant/30 bg-surface-container-lowest shadow-lg z-20 p-1">
+                          <button
+                            className="w-full text-left px-3 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-low rounded-md"
+                            onClick={() => {
+                              setOpenMenuWorkspaceId(null);
+                              router.push(`/workspaces/edit/${ws.workspace_id}`);
+                            }}
+                          >
+                            Edit workspace
+                          </button>
+                          {canDeleteWorkspace && (
+                            <button
+                              disabled={deletingWorkspaceId === ws.workspace_id}
+                              className="w-full text-left px-3 py-2 text-xs font-semibold text-error hover:bg-error-container/20 rounded-md disabled:opacity-50"
+                              onClick={() => handleDeleteWorkspace(ws.workspace_id, ws.name)}
+                            >
+                              {deletingWorkspaceId === ws.workspace_id ? "Deleting..." : "Delete workspace"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <button className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-surface-container-low rounded" onClick={(e) => e.stopPropagation()}>
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-              </div>
 
-              <h3 className="font-manrope font-bold text-lg text-on-surface mb-2">{ws.name}</h3>
-              <p className="text-on-surface-variant text-sm font-body leading-relaxed mb-6 line-clamp-2">
-                {ws.description || `Collaborative workspace for ${ws.name}.`}
-                {" "}Role:
-                <span className="uppercase text-xs font-bold">{ws.role}</span>
-              </p>
+                <h3 className="font-manrope font-bold text-lg text-on-surface mb-2">{ws.name}</h3>
+                <p className="text-on-surface-variant text-sm font-body leading-relaxed line-clamp-2 mb-2">
+                  {ws.description?.trim() || "No description provided."}
+                </p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-6">
+                  Role: <span className="text-on-surface">{ws.role}</span>
+                </p>
 
-              <div className="flex items-center justify-between pt-4 border-t border-surface-container-high/50">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-primary border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold text-white uppercase">
-                    {ws.owner_id.substring(0, 2)}
+                <div className="flex items-center justify-between pt-4 border-t border-surface-container-high/50">
+                  <div className="flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full bg-primary border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                      {getOwnerBadge(ws.owner_email, ws.owner_id)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-xs font-bold text-on-surface">Owner</span>
+                    <span className="block text-[10px] text-on-surface-variant tracking-wide">{ownerEmail}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="block text-xs font-bold text-on-surface">Owner</span>
-                  <span className="block text-[10px] text-on-surface-variant uppercase tracking-wider">{ws.owner_id}</span>
+
+                <div className="mt-4 flex gap-2">
+                  <button className="flex-1 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-xs font-bold text-on-surface" onClick={(e) => { e.stopPropagation(); redirectToWorkspace(ws.workspace_id); }}>
+                    Enter Workspace
+                  </button>
                 </div>
               </div>
-
-              <div className="mt-4 flex gap-2">
-                <button className="flex-1 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-xs font-bold text-on-surface" onClick={(e) => { e.stopPropagation(); redirectToWorkspace(ws.workspace_id); }}>
-                  Enter Workspace
-                </button>
-                {(ws.role === "owner" || ws.role === "admin") && (
-                  <button
-                    className="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors text-on-surface-variant"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/workspaces/edit/${ws.workspace_id}`);
-                    }}
-                  >
-                    <span className="material-symbols-outlined text-sm">edit</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Add New Workspace Empty State Card */}
           <div onClick={toCreatePage} className="border-2 border-dashed border-outline-variant/30 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-surface-container-low transition-all cursor-pointer group">
@@ -126,34 +190,6 @@ export default function WorkspacesPage() {
             </div>
             <h3 className="font-manrope font-bold text-on-surface mb-1">Create New Workspace</h3>
             <p className="text-on-surface-variant text-xs font-body max-w-[200px]">Launch a new dedicated studio for your next big idea.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Mock Stats/Activity Section */}
-      {workspaces.length > 0 && (
-        <div className="mt-16 grid grid-cols-12 gap-8">
-          <div className="col-span-12 lg:col-span-8 bg-surface-container-low rounded-2xl p-8">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-manrope font-extrabold text-on-surface">Recent Activity</h2>
-              <button className="text-primary text-sm font-bold hover:underline">View All</button>
-            </div>
-            <div className="space-y-6">
-              <div className="text-sm text-on-surface-variant italic">Activity feed will appear here as your team collaborates.</div>
-            </div>
-          </div>
-
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            <div className="bg-gradient-to-br from-primary to-primary-dim p-8 rounded-2xl text-white shadow-xl">
-              <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-70">Workspace Insights</span>
-              <div className="mt-4 mb-8">
-                <span className="text-4xl font-manrope font-extrabold tracking-tighter">84%</span>
-                <p className="text-sm opacity-80 mt-1">Utilization across all studios</p>
-              </div>
-              <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-white h-full" style={{ width: "84%" }}></div>
-              </div>
-            </div>
           </div>
         </div>
       )}
