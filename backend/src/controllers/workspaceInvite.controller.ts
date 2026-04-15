@@ -1,7 +1,6 @@
 import { pool } from "../config/DB_connect";
 import { Request, Response } from "express";
-import { getClients } from "../socket";
-import { emitMemberAdded, emitWorkspaceInviteResponse, emitWorkspaceJoined } from "../socket/emitter";
+import { emitMemberAdded, emitWorkspaceInvite, emitWorkspaceInviteResponse, emitWorkspaceJoined } from "../socket/emitter";
 
 interface Users{
     id:string
@@ -21,6 +20,7 @@ interface WorkspaceForUser {
     slug: string;
     description: string;
     owner_id: string;
+    owner_email: string | null;
     created_at: Date;
     role: "owner" | "admin" | "member";
 }
@@ -33,13 +33,21 @@ interface WorkspaceMemberWithName {
 }
 export const sendInvite = async (req: Request<{}, {}, { invited_user_email: string,workspace_id:string }>, res: Response): Promise<Response | void> => {
     try {
-        const clients = getClients();
         const workspace_id = req.body.workspace_id;
         const invited_user_email = req.body.invited_user_email;
         const invited_by_id = req.user?.id;
+        if (!invited_by_id) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        if (!workspace_id || !invited_user_email) {
+            return res.status(400).json({ message: "workspace_id and invited_user_email are required" });
+        }
         //fetch user_id for the email
 
         const getEmail =await pool.query<Users>("SELECT * from users WHERE email=$1",[invited_user_email]);
+        if (getEmail.rowCount === 0) {
+            return res.status(404).json({ message: "No user found with this email" });
+        }
         const invited_user_id=getEmail.rows[0].id;
 
         //create db entry in workspace_invites
@@ -58,26 +66,13 @@ export const sendInvite = async (req: Request<{}, {}, { invited_user_email: stri
         const user_name = userResult.rows[0].name;
         const email = userResult.rows[0].email;
 
-
-        //send ws message to user
-        const sockets = clients.get(invited_user_id);
-        if (sockets) {
-            for (const socket of sockets) {
-                if (socket.readyState === socket.OPEN) {
-                    socket.send(JSON.stringify({
-                        type: "workspace_invite",
-                        category: "invite",
-                        payload: {
-                            id: invite_id,
-                            workspace_id: workspace_id,
-                            invited_by_name: user_name,
-                            invited_by_email: email,
-                            workspace_name: workspace_name
-                        }
-                    }));
-                }
-            }
-        }
+        emitWorkspaceInvite(invited_user_id, {
+            id: invite_id,
+            workspace_id,
+            invited_by_name: user_name,
+            invited_by_email: email,
+            workspace_name,
+        });
 
         res.status(200).json({
             message:"success"
@@ -149,10 +144,12 @@ export const acceptInvite = async (req: Request<{}, {}, { workspace_id: string }
                     w.slug,
                     w.description,
                     w.owner_id,
+                    owner_user.email AS owner_email,
                     w.created_at,
                     wm.role
                  FROM workspace_members wm
                  JOIN workspaces w ON w.id = wm.workspace_id
+                 LEFT JOIN users owner_user ON owner_user.id = w.owner_id
                  WHERE wm.workspace_id = $1 AND wm.user_id = $2
                  LIMIT 1`,
                 [workspace_id, user_id]

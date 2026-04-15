@@ -1,6 +1,6 @@
-import { log } from "node:console";
 import { pool } from "../config/DB_connect";
 import { Request, Response } from "express";
+import { emitWorkspaceDeleted } from "../socket/emitter";
 
 interface Workspace {
     id: string;
@@ -55,7 +55,12 @@ export const createWorkspace = async (req: Request<{}, {}, WorkspaceReqBody>, re
 
         await client.query("COMMIT");
 
-        const resWorkspace = { ...workspace.rows[0], workspace_id: workspace.rows[0].id, role: "owner" }
+        const resWorkspace = {
+            ...workspace.rows[0],
+            workspace_id: workspace.rows[0].id,
+            role: "owner",
+            owner_email: req.user?.email ?? null
+        }
         res.status(201).json({
             message: "Workspace Created",
             workspace: resWorkspace
@@ -103,6 +108,11 @@ export const deleteWorkspace = async (req: Request<{ workspace_id: string }, {},
             return res.status(403).json({ message: "Only owner of the workspace can delete it" });
         }
 
+        const workspaceMembers = await pool.query<{ user_id: string }>(
+            "SELECT user_id FROM workspace_members WHERE workspace_id = $1",
+            [workspace_id]
+        );
+
         //delete workspace
         const removeWorkspace = await pool.query(
             "DELETE FROM workspaces WHERE id=$1",
@@ -111,6 +121,12 @@ export const deleteWorkspace = async (req: Request<{ workspace_id: string }, {},
         if (removeWorkspace.rowCount === 0) {
             return res.status(404).json({ message: "Workspace not found" });
         }
+
+        await emitWorkspaceDeleted(
+            workspace_id,
+            workspaceMembers.rows.map((member) => member.user_id)
+        );
+
         return res.status(200).json({ message: "Workspace deleted", workspace_id });
     } catch (e) {
         const err = e as Error;
@@ -199,10 +215,21 @@ export const getUserWorkspaces = async (req: Request<{}, {}, {}>, res: Response)
 
         //return the workspaces of the use
         const userWorkspaces = await pool.query(
-            `SELECT wm.workspace_id,w.name,w.slug,w.owner_id,w.created_at,w.description,wm.role
+            `SELECT
+                wm.workspace_id,
+                w.name,
+                w.slug,
+                w.owner_id,
+                owner_user.email AS owner_email,
+                w.created_at,
+                w.description,
+                wm.role
              FROM workspace_members wm
              JOIN workspaces w
-             ON wm.workspace_id=w.id AND wm.user_id=$1`,
+             ON wm.workspace_id = w.id
+             LEFT JOIN users owner_user
+             ON owner_user.id = w.owner_id
+             WHERE wm.user_id = $1`,
             [user_id]
         )
         if (userWorkspaces.rowCount === 0) {

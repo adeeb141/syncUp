@@ -2,6 +2,7 @@ import { PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sd
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getS3 } from "../config/s3";
 import { pool } from "../config/DB_connect";
+import { emitFileDeleted, emitFileUploaded } from "../socket/emitter";
 
 
 // ======================= UPLOAD =======================
@@ -71,10 +72,13 @@ export const uploadFile = async (req: any, res: any) => {
         user_id,
       ]
     );
+    const uploadedFile = result.rows[0];
+
+    await emitFileUploaded(workspace_id, uploadedFile);
 
     return res.status(201).json({
       message: "File uploaded",
-      file: result.rows[0],
+      file: uploadedFile,
     });
 
   } catch (err: any) {
@@ -181,6 +185,12 @@ export const deleteFile = async (req: any, res: any) => {
     }));
 
     await pool.query(`DELETE FROM files WHERE id=$1`, [file_id]);
+    await emitFileDeleted(fileData.workspace_id, {
+      fileId: fileData.id,
+      workspace_id: fileData.workspace_id,
+      project_id: fileData.project_id,
+      task_id: fileData.task_id,
+    });
 
     return res.status(200).json({ message: "File deleted" });
 

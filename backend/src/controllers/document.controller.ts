@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { pool } from "../config/DB_connect";
 import { canUserEditDocument, DocumentAccess } from "../utils/documentPermissions";
+import { emitDocumentCreated } from "../socket/emitter";
 
 // ======================= CREATE DOCUMENT =======================
 
@@ -106,6 +107,11 @@ export const createDocument = async (
     }
 
     await client.query("COMMIT");
+
+    await emitDocumentCreated(workspace_id, {
+      ...newDoc,
+      creator_name: null,
+    });
 
     return res.status(201).json({
       message: "Document created",

@@ -134,7 +134,7 @@ export function initSocket(server: Server) {
               [message.userId]
             );
 
-            if (pendingInvites.rowCount && pendingInvites.rowCount > 0 && ws.readyState === ws.OPEN) {
+            if (pendingInvites.rowCount && pendingInvites.rowCount > 0 && ws.readyState === 1) {
               ws.send(JSON.stringify({
                 type: "PENDING_INVITES",
                 category: "invite",

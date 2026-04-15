@@ -1,6 +1,8 @@
 import { getClients } from ".";
 import { pool } from "../config/DB_connect";
 
+const WS_OPEN_STATE = 1;
+const isSocketOpen = (socket: { readyState: number }) => socket.readyState === WS_OPEN_STATE;
 
  //Broadcast to all online members of a workspace
 async function broadcastToWorkspace(workspaceId: string, payload: object) {
@@ -16,7 +18,7 @@ async function broadcastToWorkspace(workspaceId: string, payload: object) {
         if (!sockets) continue;
 
         for (const socket of sockets) {
-            if (socket.readyState === socket.OPEN) {
+            if (isSocketOpen(socket)) {
                 socket.send(JSON.stringify(payload));
             }
         }
@@ -31,7 +33,7 @@ function sendToUser(userId: string, payload: object) {
     if (!sockets) return;
 
     for (const socket of sockets) {
-        if (socket.readyState === socket.OPEN) {
+        if (isSocketOpen(socket)) {
             socket.send(JSON.stringify(payload));
         }
     }
@@ -95,12 +97,54 @@ export async function emitProjectDeleted(workspaceId: string, projectId: string)
     });
 }
 
-export async function emitWorkspaceDeleted(workspaceId: string) {
+export async function emitFileUploaded(workspaceId: string, file: object) {
     await broadcastToWorkspace(workspaceId, {
+        type: "FILE_UPLOADED",
+        category: "sync",
+        file,
+    });
+}
+
+export async function emitFileDeleted(
+    workspaceId: string,
+    payload: {
+        fileId: string;
+        workspace_id: string;
+        project_id: string | null;
+        task_id: string | null;
+    }
+) {
+    await broadcastToWorkspace(workspaceId, {
+        type: "FILE_DELETED",
+        category: "sync",
+        ...payload,
+    });
+}
+
+export async function emitDocumentCreated(workspaceId: string, document: object) {
+    await broadcastToWorkspace(workspaceId, {
+        type: "DOCUMENT_CREATED",
+        category: "sync",
+        document,
+    });
+}
+
+export async function emitWorkspaceDeleted(workspaceId: string, memberIds?: string[]) {
+    const payload = {
         type: "WORKSPACE_DELETED",
         category: "sync",
         workspaceId,
-    });
+    };
+
+    if (memberIds && memberIds.length > 0) {
+        const uniqueMemberIds = new Set(memberIds);
+        for (const memberId of uniqueMemberIds) {
+            sendToUser(memberId, payload);
+        }
+        return;
+    }
+
+    await broadcastToWorkspace(workspaceId, payload);
 }
 
 export async function emitMemberAdded(workspaceId: string, member: object) {
@@ -143,6 +187,23 @@ export function emitWorkspaceInviteResponse(
 ) {
     sendToUser(inviterId, {
         type: "WORKSPACE_INVITE_RESPONSE",
+        category: "invite",
+        payload,
+    });
+}
+
+export function emitWorkspaceInvite(
+    invitedUserId: string,
+    payload: {
+        id: string;
+        workspace_id: string;
+        workspace_name: string;
+        invited_by_name: string;
+        invited_by_email: string;
+    }
+) {
+    sendToUser(invitedUserId, {
+        type: "workspace_invite",
         category: "invite",
         payload,
     });
