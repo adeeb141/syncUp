@@ -38,6 +38,69 @@ interface User {
   created_at: Date;
 }
 
+interface WorkspaceMemberListRow {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  role: "owner" | "admin" | "member";
+  joined_at: Date;
+  name: string | null;
+  email: string | null;
+}
+
+export const getWorkspaceMembers = async (
+  req: Request<{ workspaceId: string }, {}, {}>,
+  res: Response
+): Promise<Response | void> => {
+  try {
+    const workspace_id = req.params.workspaceId;
+    const requesterId = req.user?.id;
+
+    if (!requesterId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const workspaceExists = await pool.query(
+      "SELECT 1 FROM workspaces WHERE id = $1",
+      [workspace_id]
+    );
+
+    if (workspaceExists.rowCount === 0) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2",
+      [workspace_id, requesterId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res.status(403).json({ message: "You are not a member of this workspace" });
+    }
+
+    const members = await pool.query<WorkspaceMemberListRow>(
+      `SELECT
+          wm.user_id AS id,
+          wm.workspace_id,
+          wm.user_id,
+          wm.role,
+          wm.joined_at,
+          u.name,
+          u.email
+       FROM workspace_members wm
+       LEFT JOIN users u ON u.id = wm.user_id
+       WHERE wm.workspace_id = $1
+       ORDER BY u.name ASC NULLS LAST, wm.joined_at ASC`,
+      [workspace_id]
+    );
+
+    return res.status(200).json({ members: members.rows });
+  } catch (error) {
+    const err = error as Error;
+    return res.status(500).json({ message: err.message });
+  }
+};
+
 export const addWorkspaceMember = async (req: Request<{ workspaceId: string }, {}, MemberBody>, res: Response): Promise<Response | void> => {
   try {
     const workspace_id = req.params.workspaceId;

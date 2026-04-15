@@ -77,6 +77,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                         } else {
                             taskStore.addTask(message.task);
                         }
+                        pushNotification({
+                            id: crypto.randomUUID(),
+                            type: "info",
+                            message: `A task was assigned to you: "${message.task?.title ?? "Untitled task"}"`
+                        });
                         break;
                     case "TASK_REVIEW_REQUESTED":
                         if (taskStore.tasks.some(t => t.id === message.task.id)) {
@@ -116,6 +121,27 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                         break;
                     case "PROJECT_DELETED":
                         projectStore.removeProject(message.projectId);
+                        break;
+                    case "FILE_UPLOADED":
+                        pushNotification({
+                            id: crypto.randomUUID(),
+                            type: "info",
+                            message: `New file uploaded: "${message.file?.name ?? "Unnamed file"}"`
+                        });
+                        break;
+                    case "FILE_DELETED":
+                        pushNotification({
+                            id: crypto.randomUUID(),
+                            type: "warning",
+                            message: "A file was deleted."
+                        });
+                        break;
+                    case "DOCUMENT_CREATED":
+                        pushNotification({
+                            id: crypto.randomUUID(),
+                            type: "info",
+                            message: `New document created: "${message.document?.name ?? "Untitled document"}"`
+                        });
                         break;
                     case "WORKSPACE_DELETED":
                         workspaceStore.setWorkspaces(

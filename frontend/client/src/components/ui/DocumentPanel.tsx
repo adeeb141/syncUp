@@ -63,6 +63,38 @@ export function DocumentPanel({ workspaceId, projectId, taskId }: DocumentPanelP
     return () => { cancelled = true; };
   }, [workspaceId, projectId, taskId]);
 
+  useEffect(() => {
+    const handleSocketMessage = (event: Event) => {
+      const message = (event as CustomEvent).detail as {
+        category?: string;
+        type?: string;
+        document?: DocumentRecord;
+      };
+
+      if (!message || message.category !== "sync" || message.type !== "DOCUMENT_CREATED" || !message.document) {
+        return;
+      }
+
+      const doc = message.document;
+      const currentProjectId = projectId ?? null;
+      const currentTaskId = taskId ?? null;
+      const matchesContext =
+        doc.workspace_id === workspaceId &&
+        (doc.project_id ?? null) === currentProjectId &&
+        (doc.task_id ?? null) === currentTaskId;
+
+      if (!matchesContext) return;
+
+      setDocuments((prev) => {
+        if (prev.some((d) => d.id === doc.id)) return prev;
+        return [doc, ...prev];
+      });
+    };
+
+    window.addEventListener("syncup:ws-message", handleSocketMessage);
+    return () => window.removeEventListener("syncup:ws-message", handleSocketMessage);
+  }, [workspaceId, projectId, taskId]);
+
   const openDocument = (doc: DocumentRecord) => {
     router.push(
       `/workspaces/${wsId || workspaceId}/doc/${doc.id}?room=${encodeURIComponent(doc.room_name)}`

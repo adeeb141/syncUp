@@ -70,7 +70,11 @@ export const useMemberStore = create<MemberStoreType>((set) => ({
     });
   } catch (err) {
     console.error("FETCH MEMBERS ERROR:", err);
-    set({ isLoading: false });
+    set({
+      members: [],
+      currentWorkspaceId: workspaceId,
+      isLoading: false,
+    });
   }
 },
   

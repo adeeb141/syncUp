@@ -11,14 +11,29 @@ type FileStoreType = {
   clearFiles: () => void;
 };
 
+const dedupeById = (files: FileRecord[]) => {
+  const seen = new Set<string>();
+  const unique: FileRecord[] = [];
+
+  for (const file of files) {
+    if (seen.has(file.id)) continue;
+    seen.add(file.id);
+    unique.push(file);
+  }
+
+  return unique;
+};
+
 export const useFileStore = create<FileStoreType>((set) => ({
   files: [],
   isLoading: false,
 
-  setFiles: (files) => set({ files, isLoading: false }),
+  setFiles: (files) => set({ files: dedupeById(files), isLoading: false }),
 
   addFile: (file) =>
-    set((state) => ({ files: [file, ...state.files] })),
+    set((state) => ({
+      files: dedupeById([file, ...state.files]),
+    })),
 
   removeFile: (fileId) =>
     set((state) => ({ files: state.files.filter((f) => f.id !== fileId) })),

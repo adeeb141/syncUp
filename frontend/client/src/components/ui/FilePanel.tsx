@@ -67,6 +67,52 @@ export function FilePanel({ workspaceId, projectId, taskId }: FilePanelProps) {
     return () => { cancelled = true; };
   }, [workspaceId, projectId, taskId]);
 
+  useEffect(() => {
+    const matchesContext = (file: FileRecord) => {
+      const currentProjectId = projectId ?? null;
+      const currentTaskId = taskId ?? null;
+      return (
+        file.workspace_id === workspaceId &&
+        (file.project_id ?? null) === currentProjectId &&
+        (file.task_id ?? null) === currentTaskId
+      );
+    };
+
+    const handleSocketMessage = (event: Event) => {
+      const message = (event as CustomEvent).detail as {
+        category?: string;
+        type?: string;
+        file?: FileRecord;
+        fileId?: string;
+        workspace_id?: string;
+        project_id?: string | null;
+        task_id?: string | null;
+      };
+
+      if (!message || message.category !== "sync") return;
+
+      if (message.type === "FILE_UPLOADED" && message.file && matchesContext(message.file)) {
+        if (useFileStore.getState().files.some((f) => f.id === message.file!.id)) return;
+        addFile(message.file);
+      }
+
+      if (message.type === "FILE_DELETED" && message.fileId) {
+        const currentProjectId = projectId ?? null;
+        const currentTaskId = taskId ?? null;
+        const sameContext =
+          message.workspace_id === workspaceId &&
+          (message.project_id ?? null) === currentProjectId &&
+          (message.task_id ?? null) === currentTaskId;
+
+        if (!sameContext) return;
+        removeFile(message.fileId);
+      }
+    };
+
+    window.addEventListener("syncup:ws-message", handleSocketMessage);
+    return () => window.removeEventListener("syncup:ws-message", handleSocketMessage);
+  }, [workspaceId, projectId, taskId, addFile, removeFile]);
+
   // ── Load more (pagination) ────────────────────────────────────────────────
   const loadMore = async () => {
     const nextOffset = offset + PAGE_SIZE;

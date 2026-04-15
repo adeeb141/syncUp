@@ -52,7 +52,11 @@ export function AddTaskModal({
 
   const filteredMembers = members
     .filter((m) => !selectedAssignees.find((s) => s.user_id === m.user_id))
-    .filter((m) => (m.name || "").toLowerCase().includes(assigneeSearch.toLowerCase()));
+    .filter((m) =>
+      (m.name || m.user_id || "")
+        .toLowerCase()
+        .includes(assigneeSearch.toLowerCase())
+    );
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -143,7 +147,7 @@ export function AddTaskModal({
                   key={m.user_id}
                   className="bg-gray-200 px-2 py-1 rounded text-xs flex items-center gap-1"
                 >
-                  {m.name}
+                  {m.name || m.user_id}
                   <button
                     onClick={() =>
                       setSelectedAssignees((prev) =>
@@ -183,7 +187,7 @@ export function AddTaskModal({
                     }}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                   >
-                    {m.name} ({m.role})
+                    {(m.name || m.user_id)} ({m.role})
                   </div>
                 ))}
               </div>
