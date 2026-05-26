@@ -22,7 +22,6 @@ const getCookieValue = (cookieHeader: string | undefined, cookieName: string): s
   if (!match) return null;
   return decodeURIComponent(match.slice(cookieName.length + 1));
 };
-
 const hocuspocus = new Hocuspocus({
   name: "syncUp-collaboration",
   async onAuthenticate({ documentName, requestHeaders, connectionConfig }) {

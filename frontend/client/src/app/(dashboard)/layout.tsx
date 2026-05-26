@@ -56,7 +56,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { icon: "account_tree", label: "Projects", href: "/projects" },
     { icon: "task_alt", label: "My Tasks", href: "/tasks" },
     { icon: "notifications", label: "Notifications", href: "#" },
-    { icon: "settings", label: "Settings", href: "#" },
+    { icon: "settings", label: "Settings", href: "/settings" },
   ];
 
   return (

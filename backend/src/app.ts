@@ -11,6 +11,7 @@ import utilityRoutes from "./routes/utility.routes";
 import inviteRoutes from  "./routes/workspaceInvite.routes";
 import documentRoutes from "./routes/document.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import userProfileRoutes from "./routes/userProfile.routes"
 const app = express();
 
 app.use(cors({
@@ -32,5 +33,7 @@ app.use("/api/invite",inviteRoutes);
 app.use("/api/projects",taskRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/user",userProfileRoutes);
 
 export default app;
