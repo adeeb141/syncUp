@@ -1,42 +1,26 @@
-import { getClients } from ".";
 import { pool } from "../config/DB_connect";
+import { publisher } from "../redis/client";
+
 
 const WS_OPEN_STATE = 1;
 const isSocketOpen = (socket: { readyState: number }) => socket.readyState === WS_OPEN_STATE;
 
  //Broadcast to all online members of a workspace
 async function broadcastToWorkspace(workspaceId: string, payload: object) {
-    const clients = getClients();
-
     const members = await pool.query<{ user_id: string }>(
         `SELECT user_id FROM workspace_members WHERE workspace_id = $1`,
         [workspaceId]
     );
 
     for (const row of members.rows) {
-        const sockets = clients.get(row.user_id);
-        if (!sockets) continue;
-
-        for (const socket of sockets) {
-            if (isSocketOpen(socket)) {
-                socket.send(JSON.stringify(payload));
-            }
-        }
+        await publisher.publish("syncup:messages",JSON.stringify({userId:row.user_id,payload}));
     }
 }
 
  //Send a message to a single user (if online).
 
 function sendToUser(userId: string, payload: object) {
-    const clients = getClients();
-    const sockets = clients.get(userId);
-    if (!sockets) return;
-
-    for (const socket of sockets) {
-        if (isSocketOpen(socket)) {
-            socket.send(JSON.stringify(payload));
-        }
-    }
+    publisher.publish("syncup:messages",JSON.stringify({userId,payload}));
 }
 export async function emitTaskUpdated(workspaceId: string, task: object) {
     await broadcastToWorkspace(workspaceId, {

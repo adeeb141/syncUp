@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { createServer } from "node:http";
 import { initSocket } from "./socket/index";
+import "./redis/subscriber";
 dotenv.config();
 
 import app from "./app";
