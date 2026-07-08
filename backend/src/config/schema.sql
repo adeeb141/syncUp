@@ -106,3 +106,60 @@ CREATE TABLE document_collaborators (
   user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   PRIMARY KEY (document_id, user_id)
 );
+
+
+-- for files 
+
+CREATE TABLE files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  size INTEGER,
+  type TEXT,
+
+  uploaded_by UUID REFERENCES users(id),
+
+  workspace_id UUID NOT NULL REFERENCES workspaces(id),
+  project_id UUID REFERENCES projects(id),
+  task_id UUID REFERENCES tasks(id),
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE files ADD COLUMN key TEXT;
+
+
+
+
+-- ============================================================================
+-- STEP 4 — THE OP LOG TABLE
+-- ============================================================================
+-- One row = one tiny edit (an insert of one character, or a delete of one).
+-- This is the durable, append-only history of a document. We never UPDATE
+-- or DELETE rows here — the log only ever grows. That's what makes "replay
+-- everything after sequence N" and "reconstruct the document as of time T"
+-- both possible later, for free.
+
+CREATE TABLE IF NOT EXISTS crdt_ops (
+  seq BIGSERIAL PRIMARY KEY,          -- strictly increasing, this IS the delivery order for replay
+  doc_id UUID NOT NULL,                -- which document this edit belongs to
+  op_type TEXT NOT NULL CHECK (op_type IN ('insert', 'delete')),
+
+  -- the id of the character this op is ABOUT
+  -- (for insert: the new character's own id. for delete: the id being removed)
+  id_site TEXT NOT NULL,
+  id_clock INTEGER NOT NULL,
+
+  value TEXT,                          -- the actual character — only set for inserts
+  origin_site TEXT,                    -- "inserted right after this character" — only set for inserts
+  origin_clock INTEGER,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  -- Same op arriving twice (e.g. a client retries, or a message gets
+  -- delivered twice over the network) should be a no-op, not a duplicate row.
+  UNIQUE (doc_id, op_type, id_site, id_clock)
+);
+
+-- Every reconnect asks "ops for THIS doc, after sequence N" — index for that.
+CREATE INDEX IF NOT EXISTS idx_crdt_ops_doc_seq ON crdt_ops (doc_id, seq);

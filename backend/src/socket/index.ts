@@ -5,6 +5,7 @@ import { saveDocument, loadDocument } from "../utils/fileStorage";
 import { pool } from "../config/DB_connect";
 import jwt from "jsonwebtoken";
 import { canUserEditDocument, DocumentAccess } from "../utils/documentPermissions";
+import { handleCrdtOpMessage } from "../crdt-engine/ws-handler";
 
 const clients = new Map<string, Set<WebSocket>>();
 
@@ -149,6 +150,8 @@ export function initSocket(server: Server) {
           } catch (err) {
             console.error("Error fetching pending invites:", err);
           }
+        } else if (message.type === "CRDT_OP") {
+          await handleCrdtOpMessage(message);
         }
       } catch (err) {
         console.error("Invalid message format:", err);

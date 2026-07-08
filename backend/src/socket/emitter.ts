@@ -6,7 +6,7 @@ const WS_OPEN_STATE = 1;
 const isSocketOpen = (socket: { readyState: number }) => socket.readyState === WS_OPEN_STATE;
 
  //Broadcast to all online members of a workspace
-async function broadcastToWorkspace(workspaceId: string, payload: object) {
+export async function broadcastToWorkspace(workspaceId: string, payload: object) {
     const members = await pool.query<{ user_id: string }>(
         `SELECT user_id FROM workspace_members WHERE workspace_id = $1`,
         [workspaceId]
@@ -19,7 +19,7 @@ async function broadcastToWorkspace(workspaceId: string, payload: object) {
 
  //Send a message to a single user (if online).
 
-function sendToUser(userId: string, payload: object) {
+export function sendToUser(userId: string, payload: object) {
     publisher.publish("syncup:messages",JSON.stringify({userId,payload}));
 }
 export async function emitTaskUpdated(workspaceId: string, task: object) {
