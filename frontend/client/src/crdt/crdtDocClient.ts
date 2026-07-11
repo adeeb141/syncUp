@@ -11,8 +11,8 @@ import { RGA } from "./rga";
 import { Op } from "./types";
 import { getSocket } from "@/lib/wsConnection";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
+//const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+const API_BASE =process.env.NEXT_PUBLIC_API_URL ?? "";
 interface CrdtOpMessage {
   type: "CRDT_OP";
   category: string;

@@ -633,6 +633,11 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+      <div className="pt-10 text-center">
+  <p className="text-green-600 font-semibold text-base">
+    🚀 CI/CD Done Bro
+  </p>
+</div>
     </div>
   );
 }
