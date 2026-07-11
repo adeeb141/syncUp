@@ -28,3 +28,13 @@ jobs:
       - name: Push Backend Image
         run: |
           docker push kishor3557/syncup-backend:latest
+
+      - name: Build Frontend Image
+        run: |
+          docker build \
+            -t kishor3557/syncup-frontend:latest \
+            ./frontend/client
+
+      - name: Push Frontend Image
+        run: |
+          docker push kishor3557/syncup-frontend:latest
