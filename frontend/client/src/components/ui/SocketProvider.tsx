@@ -216,8 +216,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         if (!userId) return;
 
         //const ws = new WebSocket('ws://localhost:5000');
-         const WS_URL =
-      process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:5000";
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const WS_URL = `${protocol}//${window.location.host}`;
 
     const ws = new WebSocket(WS_URL);
 
