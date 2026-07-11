@@ -217,7 +217,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
         //const ws = new WebSocket('ws://localhost:5000');
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const WS_URL = `${protocol}//${window.location.host}`;
+const WS_URL = `${protocol}//${window.location.host}/ws`;
 
     const ws = new WebSocket(WS_URL);
 
