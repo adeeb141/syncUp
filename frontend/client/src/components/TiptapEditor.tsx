@@ -133,8 +133,9 @@ export default function TiptapEditor({ roomName, workspaceId, documentId }: Tipt
 
   useEffect(() => {
     const ydoc = new Y.Doc();
-    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "ws://localhost:5000/collaboration";
-
+    // const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "ws://localhost:5000/collaboration";
+     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const SOCKET_URL = `${protocol}//${window.location.host}/collaboration`;
     const newProvider = new HocuspocusProvider({
       url: SOCKET_URL,
       name: roomName,
