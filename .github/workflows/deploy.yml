@@ -24,3 +24,7 @@ jobs:
           docker build \
             -t kishor3557/syncup-backend:latest \
             ./backend
+        
+      - name: Push Backend Image
+        run: |
+          docker push kishor3557/syncup-backend:latest
