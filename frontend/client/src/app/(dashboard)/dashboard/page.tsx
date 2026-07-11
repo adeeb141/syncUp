@@ -634,7 +634,7 @@ export default function DashboardPage() {
         </>
       )}
       <div className="pt-10 text-center">
-  <p className="text-green-600 font-semibold text-base">
+  <p className="text-red-600 font-semibold text-base">
     🚀 CI/CD Done Bro
   </p>
 </div>
