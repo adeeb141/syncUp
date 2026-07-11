@@ -1,0 +1,68 @@
+
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: syncup
+      POSTGRES_PASSWORD: localdevpassword
+      POSTGRES_DB: syncup
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Auto-runs any .sql file here once, on first container creation only —
+      # copy your real backend/src/config/schema.sql into ./deploy/init-db/ for this to work.
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U syncup"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+      # Loads all 8 of your real keys (PORT, JWT_SECRET, AWS_REGION,
+      # AWS_ACCESS_KEY, AWS_SECRET_KEY, S3_BUCKET, DATABASE_URL, REDIS_URL).
+      # AWS_* and S3_BUCKET stay pointed at your REAL S3 bucket even in this
+      # local test — there's no "local S3", so file upload testing here still
+      # hits the actual cloud bucket. DATABASE_URL and REDIS_URL get
+      # overridden below to point at the local containers instead.
+    environment:
+      DATABASE_URL: postgres://syncup:localdevpassword@postgres:5432/syncup
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend/client
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

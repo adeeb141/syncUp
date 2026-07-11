@@ -28,8 +28,8 @@
  * cover requirement #3 (offline edits merge correctly on reconnect).
  */
 
-import { RGA } from "./rga";
-import { Op } from "./types";
+import { RGA } from "../rga";
+import { Op } from "../types";
 
 function randomInterleaving<T>(seqA: T[], seqB: T[]): T[] {
   const result: T[] = [];

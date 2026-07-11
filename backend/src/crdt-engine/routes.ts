@@ -23,7 +23,11 @@ const router = Router();
 
 router.get("/:docId/ops", requireAuth, async (req: Request, res: Response) => {
   try {
-    const { docId } = req.params;
+    // const { docId } = req.params;
+    const docId = Array.isArray(req.params.docId)
+  ? req.params.docId[0]
+  : req.params.docId;
+  
     const since = Number(req.query.since ?? 0);
 
     const { ops, latestSeq } = await getOpsSince(docId, Number.isFinite(since) ? since : 0);
@@ -37,7 +41,10 @@ router.get("/:docId/ops", requireAuth, async (req: Request, res: Response) => {
 // GET /api/crdt-docs/:docId/history?atSeq=42  -> view the doc as it looked at that point
 router.get("/:docId/history", requireAuth, async (req: Request, res: Response) => {
   try {
-    const { docId } = req.params;
+    // const { docId } = req.params;
+     const docId = Array.isArray(req.params.docId)
+  ? req.params.docId[0]
+  : req.params.docId;
     const atSeq = Number(req.query.atSeq);
     if (!Number.isFinite(atSeq)) {
       res.status(400).json({ error: "atSeq query param is required" });
@@ -54,7 +61,10 @@ router.get("/:docId/history", requireAuth, async (req: Request, res: Response) =
 // POST /api/crdt-docs/:docId/revert  { workspaceId, targetSeq }
 router.post("/:docId/revert", requireAuth, async (req: Request, res: Response) => {
   try {
-    const { docId } = req.params;
+    // const { docId } = req.params;
+     const docId = Array.isArray(req.params.docId)
+  ? req.params.docId[0]
+  : req.params.docId;
     const { workspaceId, targetSeq } = req.body;
     const userId = (req as any).user?.id ?? "unknown-user";
 

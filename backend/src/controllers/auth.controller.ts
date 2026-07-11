@@ -74,13 +74,18 @@ export const login = async (req:Request<{},{},loginBody>, res:Response) : Promis
 
         const token = generateToken(user);
         
-        res.cookie("loginToken",token,{
-            httpOnly:true,
-            secure: process.env.NODE_ENV === "production", 
-            sameSite:"strict",
-            maxAge:24*60*60*1000
-        });
-
+        // res.cookie("loginToken",token,{
+        //     httpOnly:true,
+        //     secure: process.env.NODE_ENV === "production", 
+        //     sameSite:"strict",
+        //     maxAge:24*60*60*1000
+        // });
+res.cookie("loginToken", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000
+});
         const {password_hash,...loggedInUser}=user;
         res.status(200).json({
             message: "Login successful",
@@ -109,11 +114,17 @@ export const getMe = async (req:Request<{},{},{}>, res:Response) => {
 
 export const logout = async (req: Request, res: Response) => {
   try {
+    // res.clearCookie("loginToken", {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "strict",
+    // });
+
     res.clearCookie("loginToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+});
     res.status(200).json({ message: "Logout successful" });
   } catch (error) {
     const err = error as Error;
