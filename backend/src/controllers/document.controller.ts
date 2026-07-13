@@ -9,6 +9,7 @@ interface CreateDocumentBody {
   name: string;
   description?: string;
   access: "view_only" | "open_collab" | "selective";
+  type?: "text" | "whiteboard";
   project_id?: string;
   task_id?: string;
   collaborator_ids?: string[]; // user IDs for selective access
@@ -22,10 +23,13 @@ export const createDocument = async (
   try {
     const user_id = req.user?.id;
     const { workspace_id } = req.params;
-    const { name, description, access, project_id, task_id, collaborator_ids } = req.body;
+    const { name, description, access, type, project_id, task_id, collaborator_ids } = req.body;
 
     if (!user_id) return res.status(401).json({ message: "Unauthorized" });
     if (!name?.trim()) return res.status(400).json({ message: "Document name is required" });
+    if (type && type !== "text" && type !== "whiteboard") {
+      return res.status(400).json({ message: "Invalid document type" });
+    }
 
     // validate workspace membership
     const memberCheck = await client.query(
@@ -77,13 +81,14 @@ export const createDocument = async (
 
     // insert document — room_name is generated server-side
     const doc = await client.query(
-      `INSERT INTO documents(name, description, access, workspace_id, project_id, task_id, room_name, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO documents(name, description, access, type, workspace_id, project_id, task_id, room_name, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         name.trim(),
         description || "",
         access || "open_collab",
+        type || "text",
         workspace_id,
         project_id || null,
         task_id || null,
@@ -212,6 +217,7 @@ export const getDocumentById = async (
       name: string;
       description: string;
       access: DocumentAccess;
+      type: "text" | "whiteboard";
       workspace_id: string;
       project_id: string | null;
       task_id: string | null;
@@ -240,6 +246,7 @@ export const getDocumentById = async (
         name: doc.name,
         description: doc.description,
         access: doc.access,
+        type: doc.type,
         workspace_id: doc.workspace_id,
         project_id: doc.project_id,
         task_id: doc.task_id,

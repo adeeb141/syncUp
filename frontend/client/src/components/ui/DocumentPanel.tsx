@@ -9,6 +9,7 @@ interface DocumentRecord {
   name: string;
   description: string;
   access: "view_only" | "open_collab" | "selective";
+  type?: "text" | "whiteboard";
   workspace_id: string;
   project_id: string | null;
   task_id: string | null;
@@ -96,8 +97,9 @@ export function DocumentPanel({ workspaceId, projectId, taskId }: DocumentPanelP
   }, [workspaceId, projectId, taskId]);
 
   const openDocument = (doc: DocumentRecord) => {
+    const basePath = doc.type === "whiteboard" ? "whiteboard" : "doc";
     router.push(
-      `/workspaces/${wsId || workspaceId}/doc/${doc.id}?room=${encodeURIComponent(doc.room_name)}`
+      `/workspaces/${wsId || workspaceId}/${basePath}/${doc.id}?room=${encodeURIComponent(doc.room_name)}`
     );
   };
 
@@ -164,7 +166,7 @@ export function DocumentPanel({ workspaceId, projectId, taskId }: DocumentPanelP
                     className="material-symbols-outlined text-primary text-base"
                     style={{ fontVariationSettings: "'FILL' 1" }}
                   >
-                    article
+                    {doc.type === "whiteboard" ? "draw" : "article"}
                   </span>
                 </div>
 

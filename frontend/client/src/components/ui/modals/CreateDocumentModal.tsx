@@ -8,6 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 type AccessType = "view_only" | "open_collab" | "selective";
 type AttachTo = "workspace" | "project" | "task";
+type DocType = "text" | "whiteboard";
 
 interface TaskOption {
   id: string;
@@ -25,6 +26,11 @@ const ACCESS_OPTIONS: { value: AccessType; label: string; icon: string; desc: st
   { value: "selective", label: "Selective", icon: "lock", desc: "Only chosen members can edit" },
 ];
 
+const TYPE_OPTIONS: { value: DocType; label: string; icon: string; desc: string }[] = [
+  { value: "text", label: "Document", icon: "description", desc: "Rich-text editor" },
+  { value: "whiteboard", label: "Whiteboard", icon: "draw", desc: "Shapes on a shared canvas" },
+];
+
 const ATTACH_OPTIONS: { value: AttachTo; label: string; icon: string }[] = [
   { value: "workspace", label: "Workspace", icon: "workspaces" },
   { value: "project", label: "Project", icon: "folder" },
@@ -39,6 +45,7 @@ export function CreateDocumentModal({ workspaceId, onClose }: Props) {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [docType, setDocType] = useState<DocType>("text");
   const [access, setAccess] = useState<AccessType>("open_collab");
   const [attachTo, setAttachTo] = useState<AttachTo>("workspace");
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -107,19 +114,21 @@ export function CreateDocumentModal({ workspaceId, onClose }: Props) {
         name: name.trim(),
         description,
         access,
+        type: docType,
       };
       if (attachTo !== "workspace") body.project_id = selectedProjectId;
       if (attachTo === "task") body.task_id = selectedTaskId;
       if (access === "selective") body.collaborator_ids = selectedCollaborators;
 
-      const result = await api.post<{ document: { id: string; room_name: string } }>(
+      const result = await api.post<{ document: { id: string; room_name: string; type: DocType } }>(
         `/api/documents/${workspaceId}`,
         body
       );
 
       onClose();
+      const basePath = result.document.type === "whiteboard" ? "whiteboard" : "doc";
       router.push(
-        `/workspaces/${workspaceId}/doc/${result.document.id}?room=${encodeURIComponent(result.document.room_name)}`
+        `/workspaces/${workspaceId}/${basePath}/${result.document.id}?room=${encodeURIComponent(result.document.room_name)}`
       );
     } catch (e: any) {
       setError(e.message || "Failed to create document");
@@ -150,7 +159,7 @@ export function CreateDocumentModal({ workspaceId, onClose }: Props) {
           </div>
           <div>
             <h2 className="font-headline text-2xl font-extrabold text-on-surface">New Document</h2>
-            <p className="text-on-surface-variant text-xs">Create a collaborative document in your workspace.</p>
+            <p className="text-on-surface-variant text-xs">Create something collaborative in your workspace.</p>
           </div>
         </div>
 
@@ -161,6 +170,36 @@ export function CreateDocumentModal({ workspaceId, onClose }: Props) {
         )}
 
         <div className="space-y-5 mt-6">
+          {/* Type */}
+          <div>
+            <label className="block text-sm font-semibold text-on-surface mb-2">Type</label>
+            <div className="grid grid-cols-2 gap-2">
+              {TYPE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setDocType(opt.value)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center transition-all ${
+                    docType === opt.value
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-outline-variant/30 hover:border-outline-variant/60"
+                  }`}
+                >
+                  <span
+                    className={`material-symbols-outlined text-lg ${docType === opt.value ? "text-primary" : "text-on-surface-variant"}`}
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    {opt.icon}
+                  </span>
+                  <span className={`text-xs font-bold ${docType === opt.value ? "text-primary" : "text-on-surface"}`}>
+                    {opt.label}
+                  </span>
+                  <span className="text-[10px] text-on-surface-variant leading-tight">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Document Name */}
           <div>
             <label className="block text-sm font-semibold text-on-surface mb-1">
