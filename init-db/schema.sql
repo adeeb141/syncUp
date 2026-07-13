@@ -112,6 +112,7 @@ CREATE TABLE documents (
   description  TEXT DEFAULT '',
   access       VARCHAR(20) NOT NULL DEFAULT 'open_collab',  -- 'view_only' | 'open_collab' | 'selective'
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  type         VARCHAR(20) NOT NULL DEFAULT 'text' CHECK (type IN ('text', 'whiteboard')),
   project_id   UUID REFERENCES projects(id) ON DELETE SET NULL,
   task_id      UUID REFERENCES tasks(id) ON DELETE SET NULL,
   room_name    VARCHAR(500) NOT NULL UNIQUE,
