@@ -183,3 +183,21 @@ CREATE TABLE IF NOT EXISTS crdt_ops (
 
 -- Every reconnect asks "ops for THIS doc, after sequence N" — index for that.
 CREATE INDEX IF NOT EXISTS idx_crdt_ops_doc_seq ON crdt_ops (doc_id, seq);
+
+-- ============================================================================
+-- Push Subscriptions (Web Push API)
+-- ============================================================================
+-- Stores browser push subscriptions per user, so we can deliver notifications
+-- even when the user has no active WebSocket connection (browser/tab closed).
+-- One user can have multiple rows here (different browsers/devices).
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);

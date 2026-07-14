@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/ui/AuthProvider";
 import { SocketProvider } from "@/components/ui/SocketProvider";
 import { NotificationToast } from "@/components/ui/NotificationToast";
+import PushNotificationSetup from "@/components/PushNotificationSetup";
 export const metadata: Metadata = {
   title: "SyncUp — Collaborate in Sync",
   description: "The modern workspace for teams to collaborate, manage projects, and stay in sync.",
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <PushNotificationSetup />
         <AuthProvider/>
         <SocketProvider>
           <NotificationToast/>

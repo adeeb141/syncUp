@@ -1,6 +1,6 @@
 import { pool } from "../config/DB_connect";
 import { publisher } from "../redis/client";
-
+import webpush from "../config/webpush";
 
 const WS_OPEN_STATE = 1;
 const isSocketOpen = (socket: { readyState: number }) => socket.readyState === WS_OPEN_STATE;
@@ -17,11 +17,40 @@ export async function broadcastToWorkspace(workspaceId: string, payload: object)
     }
 }
 
+
+
  //Send a message to a single user (if online).
 
 export function sendToUser(userId: string, payload: object) {
     publisher.publish("syncup:messages",JSON.stringify({userId,payload}));
 }
+
+//Send a message to a all users (if offline).
+
+async function sendPushToUser(userId: string, title: string, body: string, data?: object) {
+  const subs = await pool.query(
+    `SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1`,
+    [userId]
+  );
+  const payload = JSON.stringify({ title, body, data: data ?? {} });
+
+  for (const sub of subs.rows) {
+    const pushSubscription = {
+      endpoint: sub.endpoint,
+      keys: { p256dh: sub.p256dh, auth: sub.auth },
+    };
+    try {
+      await webpush.sendNotification(pushSubscription, payload);
+    } catch (err: any) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await pool.query(`DELETE FROM push_subscriptions WHERE endpoint = $1`, [sub.endpoint]);
+      } else {
+        console.error("Push send error:", err);
+      }
+    }
+  }
+}
+
 export async function emitTaskUpdated(workspaceId: string, task: object) {
     await broadcastToWorkspace(workspaceId, {
         type: "TASK_UPDATED",
@@ -44,6 +73,12 @@ export function emitTaskAssigned(assigneeId: string, task: object) {
         category:"sync",
         task,
     });
+    sendPushToUser(
+      assigneeId,
+      "New task assigned",
+      "You've been assigned a new task",
+      { url: "/tasks" }
+    );
 }
 
 export function emitTaskReviewRequested(creatorId: string, task: object, assigneeName: string) {
@@ -210,4 +245,11 @@ export function emitWorkspaceInvite(
         category: "invite",
         payload,
     });
+
+    sendPushToUser(
+      invitedUserId,
+      "New workspace invite",
+      `${payload.invited_by_name} invited you to ${payload.workspace_name}`,
+      { url: "/workspaces" }
+    );
 }

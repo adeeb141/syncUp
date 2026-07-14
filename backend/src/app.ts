@@ -13,6 +13,7 @@ import documentRoutes from "./routes/document.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import userProfileRoutes from "./routes/userProfile.routes"
 import crdtRoutes from "./crdt-engine/routes";
+import pushRoutes from "./routes/push.routes";
 
 const app = express();
 
@@ -35,6 +36,8 @@ app.use("/api/workspaces",ProjectRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/utility",utilityRoutes);
 app.use("/api/invite",inviteRoutes);
+
+app.use("/api/push", pushRoutes);
 
 app.use("/api/projects",taskRoutes);
 app.use("/api/documents", documentRoutes);
