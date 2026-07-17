@@ -13,6 +13,7 @@ import { useMemberStore } from "@/stores/memberStore";
 import { useAuthStore } from "@/stores/authStore";
 import { FilePanel } from "@/components/ui/FilePanel";
 import { DocumentPanel } from "@/components/ui/DocumentPanel";
+import HuddleWidget from "@/components/huddle/HuddleWidget";
 
 interface WorkspaceUpcomingDeadline {
   id: string;
@@ -153,6 +154,12 @@ export default function WorkspaceIdPage() {
           <p className="text-on-surface-variant mt-1 font-medium">Welcome back, your workspace is seeing high activity today.</p>
         </div>
         <div className="flex items-center gap-4 text-xs font-semibold">
+          {workspaceIdParam && (
+            <HuddleWidget
+              workspaceId={workspaceIdParam}
+              getUserName={(id) => workspaceMembers.find((m) => m.user_id === id)?.name ?? id}
+            />
+          )}
           <button
             onClick={() => setShowCreateDocModal(true)}
             className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"

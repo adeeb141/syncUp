@@ -6,6 +6,8 @@ import { pool } from "../config/DB_connect";
 import jwt from "jsonwebtoken";
 import { canUserEditDocument, DocumentAccess } from "../utils/documentPermissions";
 import { handleCrdtOpMessage } from "../crdt-engine/ws-handler";
+import { randomUUID } from "crypto";
+import { handleHuddleMessage, handleHuddleDisconnect } from "../huddle/handler";
 
 const clients = new Map<string, Set<WebSocket>>();
 
@@ -122,6 +124,7 @@ export function initSocket(server: Server) {
     }
 
     console.log("New standard WebSocket connection", request.url);
+    const connectionId = randomUUID(); // new: identifies THIS specific connection, not the user
 
     ws.on("message", async (data) => {
       try {
@@ -176,6 +179,14 @@ export function initSocket(server: Server) {
 
         } else if (message.type === "CRDT_OP") {
           await handleCrdtOpMessage(message);
+        } else if (
+          message.type === "HUDDLE_JOIN" ||
+          message.type === "HUDDLE_LEAVE" ||
+          message.type === "SIGNAL_OFFER" ||
+          message.type === "SIGNAL_ANSWER" ||
+          message.type === "SIGNAL_ICE_CANDIDATE"
+        ) {
+          handleHuddleMessage(message, ws, connectionId);
         }
 
       } catch (err) {
@@ -184,6 +195,7 @@ export function initSocket(server: Server) {
     });
 
     ws.on("close", () => {
+      handleHuddleDisconnect(connectionId);
       for (const [userId, sockets] of clients.entries()) {
         if (sockets.has(ws)) {
           sockets.delete(ws);
