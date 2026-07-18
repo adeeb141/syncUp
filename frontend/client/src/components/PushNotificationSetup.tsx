@@ -475,7 +475,7 @@ console.log("Length:", publicKey?.length);
         console.log(
           "📤 Sending Push Subscription to backend..."
         );
-
+    console.log("API_URL:", API_URL);
         const response = await fetch(
           `${API_URL}/api/push/subscribe`,
           {
