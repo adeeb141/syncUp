@@ -145,17 +145,53 @@ export class HuddleClient {
       }
     };
 
+    // pc.ontrack = (event) => {
+    //   this.updateParticipantStream(remoteConnectionId, event.streams[0] ?? null);
+    // };
+
     pc.ontrack = (event) => {
-      this.updateParticipantStream(remoteConnectionId, event.streams[0] ?? null);
-    };
+  console.log(
+    "ontrack",
+    remoteConnectionId,
+    event.track.kind,
+    event.streams
+  );
+
+  this.updateParticipantStream(
+    remoteConnectionId,
+    event.streams[0] ?? null
+  );
+};
 
     // Edge case: peer disconnects mid-call without a clean HUDDLE_LEAVE
     // (network drop, tab crash) — clean up once ICE confirms it's actually gone.
+    // pc.oniceconnectionstatechange = () => {
+    //   if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
+    //     this.removePeer(remoteConnectionId);
+    //   }
+    // };
+
     pc.oniceconnectionstatechange = () => {
-      if (pc.iceConnectionState === "disconnected" || pc.iceConnectionState === "failed") {
-        this.removePeer(remoteConnectionId);
-      }
-    };
+  console.log(
+    "ICE:",
+    remoteConnectionId,
+    pc.iceConnectionState
+  );
+
+  if (
+    pc.iceConnectionState === "disconnected" ||
+    pc.iceConnectionState === "failed"
+  ) {
+    this.removePeer(remoteConnectionId);
+  }
+};
+  pc.onconnectionstatechange = () => {
+    console.log(
+      "Connection:",
+      remoteConnectionId,
+      pc.connectionState
+    );
+  };
 
     return entry;
   }
