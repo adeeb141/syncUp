@@ -129,7 +129,7 @@ export function initSocket(server: Server) {
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString());
-
+       console.log("RAW WS MESSAGE:", message);
         if (message.type === "REGISTER") {
           if (!clients.has(message.userId)) {
             clients.set(message.userId, new Set<WebSocket>());
