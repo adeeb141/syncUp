@@ -425,6 +425,8 @@ export default function PushNotificationSetup() {
           /*
            * CONVERT VAPID KEY
            */
+          console.log("VAPID key:", publicKey);
+console.log("Length:", publicKey?.length);
           const applicationServerKey =
             urlBase64ToArrayBuffer(publicKey);
 
