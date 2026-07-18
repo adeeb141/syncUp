@@ -4,6 +4,9 @@ function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
+  console.log("Original:", JSON.stringify(base64String));
+console.log("Converted:", JSON.stringify(base64));
+console.log("First char:", base64String[0], base64String.charCodeAt(0));
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 

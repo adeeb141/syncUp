@@ -220,11 +220,19 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 // const WS_URL = `${protocol}//${window.location.host}/ws`;
 
  //   const ws = new WebSocket(WS_URL);
- const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL ??
-  `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
-    const ws = new WebSocket(WS_URL);
+//  const WS_URL =
+//   process.env.NEXT_PUBLIC_WS_URL ??
+//   `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
+//     const ws = new WebSocket(WS_URL);
 
+
+ const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ||
+  `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
+
+console.log("WS_URL:", WS_URL);
+
+const ws = new WebSocket(WS_URL);
 
         ws.onopen = () => {
             setSocket(ws);
