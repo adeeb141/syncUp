@@ -56,15 +56,34 @@ export class HuddleClient {
   /** Call once: gets camera+mic, joins the huddle. Every participant gets a
    *  video transceiver from the start (even if camera starts off) — this is
    *  what lets screen share swap tracks later with NO renegotiation needed. */
-  async join(): Promise<void> {
-    this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-    this.cameraTrack = this.localStream.getVideoTracks()[0] ?? null;
-    this.onLocalStreamReady(this.localStream);
+  // async join(): Promise<void> {
+  //   this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  //   this.cameraTrack = this.localStream.getVideoTracks()[0] ?? null;
+  //   this.onLocalStreamReady(this.localStream);
 
-    this.send({ type: "HUDDLE_JOIN", workspaceId: this.workspaceId, userId: this.userId });
-    this.joined = true;
-  }
+  //   this.send({ type: "HUDDLE_JOIN", workspaceId: this.workspaceId, userId: this.userId });
+  //   this.joined = true;
+  // }
+async join(): Promise<void> {
+  console.log("join() started");
 
+  this.localStream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: true,
+  });
+
+  console.log("Got media");
+
+  this.send({
+    type: "HUDDLE_JOIN",
+    workspaceId: this.workspaceId,
+    userId: this.userId,
+  });
+
+  console.log("HUDDLE_JOIN sent");
+
+  this.joined = true;
+}
   leave(): void {
     if (this.joined) {
       this.send({ type: "HUDDLE_LEAVE", workspaceId: this.workspaceId });
@@ -121,6 +140,7 @@ export class HuddleClient {
   private send(message: object): void {
     const socket = getSocket();
     if (socket && socket.readyState === WebSocket.OPEN) {
+      console.log("Sending:", message);
       socket.send(JSON.stringify(message));
     }
   }
