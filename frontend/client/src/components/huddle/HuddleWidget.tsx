@@ -246,7 +246,7 @@ export default function HuddleWidget({ workspaceId, getUserName }: Props) {
         >
           {sharingScreen ? <ScreenShareOff className="w-4 h-4" /> : <ScreenShare className="w-4 h-4" />}
         </button>
-
+ 
         <button
           onClick={handleLeave}
           className="p-2.5 rounded-full bg-error text-on-error"
