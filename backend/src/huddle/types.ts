@@ -8,6 +8,8 @@ export interface HuddleJoinMessage {
   type: "HUDDLE_JOIN";
   workspaceId: string;
   userId: string;
+  micOn: boolean;
+  cameraOn: boolean;
 }
 
 export interface HuddleLeaveMessage {
@@ -15,10 +17,20 @@ export interface HuddleLeaveMessage {
   workspaceId: string;
 }
 
+/** Sent whenever a participant toggles mute/camera after already joining. */
+export interface HuddleMediaStateMessage {
+  type: "HUDDLE_MEDIA_STATE";
+  workspaceId: string;
+  micOn: boolean;
+  cameraOn: boolean;
+}
+
 /** One entry describing a peer already in the room, sent to a new joiner. */
 export interface HuddlePeerInfo {
   connectionId: string;
   userId: string;
+  micOn: boolean;
+  cameraOn: boolean;
 }
 
 export interface SignalMessage {
@@ -28,4 +40,4 @@ export interface SignalMessage {
   payload: unknown; // SDP or ICE candidate — server never inspects this
 }
 
-export type HuddleClientMessage = HuddleJoinMessage | HuddleLeaveMessage | SignalMessage;
+export type HuddleClientMessage = HuddleJoinMessage | HuddleLeaveMessage | HuddleMediaStateMessage | SignalMessage;

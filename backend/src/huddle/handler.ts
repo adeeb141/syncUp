@@ -33,7 +33,9 @@ export function handleHuddleMessage(
         message.workspaceId,
         connectionId,
         message.userId,
-        ws
+        ws,
+        message.micOn,
+        message.cameraOn
       );
 
       console.log("Existing peers:", existingPeers);
@@ -66,7 +68,30 @@ export function handleHuddleMessage(
           peer: {
             connectionId,
             userId: message.userId,
+            micOn: message.micOn,
+            cameraOn: message.cameraOn,
           },
+        });
+      }
+
+      break;
+    }
+
+    case "HUDDLE_MEDIA_STATE": {
+      console.log("🎛️ HUDDLE_MEDIA_STATE", message.micOn, message.cameraOn);
+      const updated = huddleRoomManager.updateMediaState(connectionId, message.micOn, message.cameraOn);
+      if (!updated) break;
+
+      const workspaceId = huddleRoomManager.whichRoom(connectionId);
+      if (!workspaceId) break;
+
+      for (const peer of huddleRoomManager.getPeersToNotify(workspaceId, connectionId)) {
+        send(peer.ws, {
+          type: "HUDDLE_PEER_MEDIA_STATE",
+          workspaceId,
+          connectionId,
+          micOn: message.micOn,
+          cameraOn: message.cameraOn,
         });
       }
 

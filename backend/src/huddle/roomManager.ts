@@ -4,6 +4,8 @@ import { HuddlePeerInfo } from "./types";
 interface RoomEntry {
   ws: WebSocket;
   userId: string;
+  micOn: boolean;
+  cameraOn: boolean;
 }
 
 /**
@@ -24,18 +26,32 @@ export class HuddleRoomManager {
   private connectionToRoom = new Map<string, string>(); // connectionId -> workspaceId, for O(1) disconnect lookup
 
   /** Adds a connection to a room. Returns who was ALREADY there (for HUDDLE_PEERS). */
-  join(workspaceId: string, connectionId: string, userId: string, ws: WebSocket): HuddlePeerInfo[] {
+  join(workspaceId: string, connectionId: string, userId: string, ws: WebSocket, micOn: boolean, cameraOn: boolean): HuddlePeerInfo[] {
     if (!this.rooms.has(workspaceId)) this.rooms.set(workspaceId, new Map());
     const room = this.rooms.get(workspaceId)!;
 
     const existingPeers: HuddlePeerInfo[] = Array.from(room.entries()).map(([cid, entry]) => ({
       connectionId: cid,
       userId: entry.userId,
+      micOn: entry.micOn,
+      cameraOn: entry.cameraOn,
     }));
 
-    room.set(connectionId, { ws, userId });
+    room.set(connectionId, { ws, userId, micOn, cameraOn });
     this.connectionToRoom.set(connectionId, workspaceId);
     return existingPeers;
+  }
+
+  /** Updates a connection's mic/camera flags after a toggle post-join. Returns false if not in a room. */
+  updateMediaState(connectionId: string, micOn: boolean, cameraOn: boolean): boolean {
+    const workspaceId = this.connectionToRoom.get(connectionId);
+    if (!workspaceId) return false;
+    const room = this.rooms.get(workspaceId);
+    const entry = room?.get(connectionId);
+    if (!entry) return false;
+    entry.micOn = micOn;
+    entry.cameraOn = cameraOn;
+    return true;
   }
 
   /** Which room (if any) a connection is currently in. */
@@ -49,7 +65,7 @@ export class HuddleRoomManager {
     if (!room) return [];
     return Array.from(room.entries())
       .filter(([cid]) => cid !== excludeConnectionId)
-      .map(([cid, entry]) => ({ connectionId: cid, userId: entry.userId, ws: entry.ws }));
+      .map(([cid, entry]) => ({ connectionId: cid, userId: entry.userId, micOn: entry.micOn, cameraOn: entry.cameraOn, ws: entry.ws }));
   }
 
   /** The exact socket for one connection in one room — used to relay signaling to exactly one peer. */

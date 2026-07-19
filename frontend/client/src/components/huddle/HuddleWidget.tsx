@@ -29,15 +29,24 @@ export default function HuddleWidget({ workspaceId, getUserName }: Props) {
   const [cameraOn, setCameraOn] = useState(true);
   const [sharingScreen, setSharingScreen] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [spotlightId, setSpotlightId] = useState<string | null>(null); // null = grid view; "local" or a connectionId = big view
 
   const clientRef = useRef<HuddleClient | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const localVideoLargeRef = useRef<HTMLVideoElement | null>(null);
+
+  const toggleSpotlight = (id: string) => {
+    setSpotlightId((current) => (current === id ? null : id));
+  };
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream]);
+    if (localVideoLargeRef.current && localStream) {
+      localVideoLargeRef.current.srcObject = localStream;
+    }
+  }, [localStream, spotlightId]);
 
   useEffect(() => {
     // Leave cleanly if the component unmounts (e.g. user navigates away) while still in a huddle.
@@ -68,6 +77,7 @@ export default function HuddleWidget({ workspaceId, getUserName }: Props) {
     setParticipants([]);
     setLocalStream(null);
     setSharingScreen(false);
+    setSpotlightId(null);
   };
 
   const toggleMic = () => {
@@ -117,20 +127,100 @@ export default function HuddleWidget({ workspaceId, getUserName }: Props) {
         <h3 className="text-sm font-bold text-on-surface">Huddle · {participants.length + 1} in call</h3>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {/* Local self-preview tile */}
-        <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-surface-container-high">
-          <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/50">
-            <span className="text-xs font-medium text-white">You</span>
-            {!micOn && <MicOff className="w-3 h-3 text-white" />}
+      {spotlightId ? (
+        <div className="space-y-2">
+          {/* Big spotlighted tile */}
+          {spotlightId === "local" ? (
+            <div
+              onClick={() => toggleSpotlight("local")}
+              className="relative aspect-video w-full rounded-xl overflow-hidden bg-surface-container-high cursor-pointer"
+            >
+              {cameraOn ? (
+                <video
+                  ref={localVideoLargeRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover scale-x-[-1]"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl">
+                    Y
+                  </div>
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/50">
+                <span className="text-xs font-medium text-white">You</span>
+                {!micOn && <MicOff className="w-3 h-3 text-white" />}
+              </div>
+            </div>
+          ) : (
+            (() => {
+              const spotlighted = participants.find((p) => p.connectionId === spotlightId);
+              return spotlighted ? (
+                <ParticipantTile
+                  participant={spotlighted}
+                  label={nameFor(spotlighted.userId)}
+                  large
+                  onClick={() => toggleSpotlight(spotlightId)}
+                />
+              ) : null;
+            })()
+          )}
+
+          {/* Thumbnail strip — click any to swap the spotlight */}
+          <div className="flex gap-2 overflow-x-auto">
+            {spotlightId !== "local" && (
+              <div className="w-28 shrink-0">
+                <div
+                  onClick={() => toggleSpotlight("local")}
+                  className="relative aspect-video rounded-lg overflow-hidden bg-surface-container-high cursor-pointer hover:ring-2 hover:ring-primary/50"
+                >
+                  {cameraOn ? (
+                    <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">Y</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {participants
+              .filter((p) => p.connectionId !== spotlightId)
+              .map((p) => (
+                <div key={p.connectionId} className="w-28 shrink-0">
+                  <ParticipantTile participant={p} label={nameFor(p.userId)} onClick={() => toggleSpotlight(p.connectionId)} />
+                </div>
+              ))}
           </div>
         </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Local self-preview tile — click to spotlight yourself */}
+          <div
+            onClick={() => toggleSpotlight("local")}
+            className="relative aspect-video w-full rounded-xl overflow-hidden bg-surface-container-high cursor-pointer hover:ring-2 hover:ring-primary/50"
+          >
+            {cameraOn ? (
+              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">Y</div>
+              </div>
+            )}
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/50">
+              <span className="text-xs font-medium text-white">You</span>
+              {!micOn && <MicOff className="w-3 h-3 text-white" />}
+            </div>
+          </div>
 
-        {participants.map((p) => (
-          <ParticipantTile key={p.connectionId} participant={p} label={nameFor(p.userId)} />
-        ))}
-      </div>
+          {participants.map((p) => (
+            <ParticipantTile key={p.connectionId} participant={p} label={nameFor(p.userId)} onClick={() => toggleSpotlight(p.connectionId)} />
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center justify-center gap-2 pt-1">
         <button

@@ -182,6 +182,7 @@ export function initSocket(server: Server) {
         } else if (
           message.type === "HUDDLE_JOIN" ||
           message.type === "HUDDLE_LEAVE" ||
+          message.type === "HUDDLE_MEDIA_STATE" ||
           message.type === "SIGNAL_OFFER" ||
           message.type === "SIGNAL_ANSWER" ||
           message.type === "SIGNAL_ICE_CANDIDATE"

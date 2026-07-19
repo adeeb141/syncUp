@@ -35,6 +35,8 @@ export class HuddleClient {
   private localStream: MediaStream | null = null;
   private cameraTrack: MediaStreamTrack | null = null;
   private screenTrack: MediaStreamTrack | null = null;
+  private micEnabled = true;
+  private cameraEnabled = true;
   private messageHandler: (e: Event) => void;
   private joined = false;
 
@@ -56,34 +58,63 @@ export class HuddleClient {
   /** Call once: gets camera+mic, joins the huddle. Every participant gets a
    *  video transceiver from the start (even if camera starts off) — this is
    *  what lets screen share swap tracks later with NO renegotiation needed. */
-  // async join(): Promise<void> {
-  //   this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-  //   this.cameraTrack = this.localStream.getVideoTracks()[0] ?? null;
-  //   this.onLocalStreamReady(this.localStream);
+  async join(): Promise<void> {
+    console.log("join() started");
 
-  //   this.send({ type: "HUDDLE_JOIN", workspaceId: this.workspaceId, userId: this.userId });
-  //   this.joined = true;
-  // }
-async join(): Promise<void> {
-  console.log("join() started");
+    this.localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
 
-  this.localStream = await navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: true,
-  });
+    console.log("Got media");
+    this.cameraTrack = this.localStream.getVideoTracks()[0] ?? null;
+    this.onLocalStreamReady(this.localStream);
 
-  console.log("Got media");
+    // Reliability fix: if the page just loaded, the shared WebSocket may
+    // still be connecting when someone clicks "Join" immediately. Sending
+    // straight away would silently no-op (send() only fires if OPEN) and
+    // HUDDLE_JOIN would just vanish. Wait briefly for the socket to actually
+    // open instead of assuming it already has.
+    const socket = await this.waitForSocketOpen();
+    if (!socket) {
+      console.error("Could not join huddle: WebSocket never became ready");
+      return;
+    }
 
-  this.send({
-    type: "HUDDLE_JOIN",
-    workspaceId: this.workspaceId,
-    userId: this.userId,
-  });
+    this.send({
+      type: "HUDDLE_JOIN",
+      workspaceId: this.workspaceId,
+      userId: this.userId,
+      micOn: this.micEnabled,
+      cameraOn: this.cameraEnabled,
+    });
 
-  console.log("HUDDLE_JOIN sent");
+    console.log("HUDDLE_JOIN sent");
 
-  this.joined = true;
-}
+    this.joined = true;
+  }
+
+  /** Resolves once the shared WebSocket is OPEN, or null after timing out. */
+  private waitForSocketOpen(timeoutMs = 8000): Promise<WebSocket | null> {
+    const existing = getSocket();
+    if (existing && existing.readyState === WebSocket.OPEN) return Promise.resolve(existing);
+
+    return new Promise((resolve) => {
+      const onOpen = () => {
+        cleanup();
+        resolve(getSocket());
+      };
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve(null);
+      }, timeoutMs);
+      function cleanup() {
+        window.removeEventListener("syncup:ws-open", onOpen);
+        clearTimeout(timer);
+      }
+      window.addEventListener("syncup:ws-open", onOpen);
+    });
+  }
   leave(): void {
     if (this.joined) {
       this.send({ type: "HUDDLE_LEAVE", workspaceId: this.workspaceId });
@@ -103,10 +134,24 @@ async join(): Promise<void> {
 
   toggleMic(enabled: boolean): void {
     this.localStream?.getAudioTracks().forEach((t) => (t.enabled = enabled));
+    this.micEnabled = enabled;
+    this.broadcastMediaState();
   }
 
   toggleCamera(enabled: boolean): void {
     if (this.cameraTrack) this.cameraTrack.enabled = enabled;
+    this.cameraEnabled = enabled;
+    this.broadcastMediaState();
+  }
+
+  private broadcastMediaState(): void {
+    if (!this.joined) return;
+    this.send({
+      type: "HUDDLE_MEDIA_STATE",
+      workspaceId: this.workspaceId,
+      micOn: this.micEnabled,
+      cameraOn: this.cameraEnabled,
+    });
   }
 
   /** Screen share: swaps the outgoing video track on every existing peer
@@ -223,7 +268,7 @@ async join(): Promise<void> {
         // for their offer. We never initiate here (avoids glare).
         for (const peer of message.peers) {
           this.createPeerConnection(peer.connectionId);
-          this.trackParticipant(peer.connectionId, peer.userId);
+          this.trackParticipant(peer.connectionId, peer.userId, peer.micOn, peer.cameraOn);
         }
         break;
       }
@@ -231,7 +276,7 @@ async join(): Promise<void> {
       case "HUDDLE_PEER_JOINED": {
         // Someone new arrived, and we were already here — WE initiate.
         const entry = this.createPeerConnection(message.peer.connectionId);
-        this.trackParticipant(message.peer.connectionId, message.peer.userId);
+        this.trackParticipant(message.peer.connectionId, message.peer.userId, message.peer.micOn, message.peer.cameraOn);
 
         const offer = await entry.pc.createOffer();
         await entry.pc.setLocalDescription(offer);
@@ -246,6 +291,15 @@ async join(): Promise<void> {
 
       case "HUDDLE_PEER_LEFT": {
         this.removePeer(message.connectionId);
+        break;
+      }
+
+      case "HUDDLE_PEER_MEDIA_STATE": {
+        const existing = this.participants.get(message.connectionId);
+        if (existing) {
+          this.participants.set(message.connectionId, { ...existing, micOn: message.micOn, cameraOn: message.cameraOn });
+          this.emitParticipants();
+        }
         break;
       }
 
@@ -305,8 +359,8 @@ async join(): Promise<void> {
 
   private participants = new Map<string, HuddleParticipant>();
 
-  private trackParticipant(connectionId: string, userId: string): void {
-    this.participants.set(connectionId, { connectionId, userId, stream: null });
+  private trackParticipant(connectionId: string, userId: string, micOn: boolean, cameraOn: boolean): void {
+    this.participants.set(connectionId, { connectionId, userId, stream: null, micOn, cameraOn });
     this.emitParticipants();
   }
 
